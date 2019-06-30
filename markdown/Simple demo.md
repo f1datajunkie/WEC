@@ -112,12 +112,16 @@ Some simple heuristics for detecting stints:
 ```python
 #Driver session
 
-#Create a flag to identify when we enter the pit
-laptimes['pitting'] = laptimes['CROSSING_FINISH_LINE_IN_PIT'] == 'B'
-# Identify a new stint for each car by sifting the pitting flag within car tables
-laptimes['newstint'] = laptimes.groupby('NUMBER')['pitting'].shift(fill_value=True)
+#Create a flag to identify when we enter the pit, aka an INLAP
+laptimes['INLAP'] = laptimes['CROSSING_FINISH_LINE_IN_PIT'] == 'B'
 
-laptimes[['DRIVER_NUMBER', 'pitting','newstint']].head()
+#Make no assumptions about table order - so sort by lap number
+laptimes = laptimes.sort_values(['NUMBER','LAP_NUMBER'])
+
+# Identify a new stint for each car by sifting the pitting / INLAP flag within car tables
+laptimes['OUTLAP'] = laptimes.groupby('NUMBER')['INLAP'].shift(fill_value=True)
+
+laptimes[['DRIVER_NUMBER', 'INLAP','OUTLAP']].head()
 ```
 
 ```python
@@ -136,24 +140,25 @@ laptimes[['DRIVER_NUMBER', 'driverchange','DRIVER_SESSION','LAP_NUMBER']][42:48]
 #Find the car stint based on count of pit stops
 laptimes['CAR_STINT'] = laptimes.groupby('NUMBER')['newstint'].cumsum().astype(int)
 
-laptimes[['CROSSING_FINISH_LINE_IN_PIT', 'pitting', 'newstint', 'CAR_STINT']].head()
+laptimes[['CROSSING_FINISH_LINE_IN_PIT', 'INLAP', 'OUTLAP', 'CAR_STINT']].head()
 ```
 
 ```python
 #Driver stint - a cumulative count for each driver of their stints
-laptimes['DRIVER_STINT'] = laptimes.groupby('CAR_DRIVER')['newstint'].cumsum().astype(int)
+laptimes['DRIVER_STINT'] = laptimes.groupby('CAR_DRIVER')['OUTLAP'].cumsum().astype(int)
 
 #Let's also derive another identifier - CAR_DRIVER_STINT
 laptimes['CAR_DRIVER_STINT'] = laptimes['CAR_DRIVER'] + '_' + laptimes['DRIVER_STINT'].astype(str)
 
-laptimes[['CAR_DRIVER', 'CROSSING_FINISH_LINE_IN_PIT', 'pitting','CAR_STINT', 'DRIVER_STINT', 'CAR_DRIVER_STINT']].tail(20).head(10)
+laptimes[['CAR_DRIVER', 'CROSSING_FINISH_LINE_IN_PIT', 'INLAP','CAR_STINT', 'DRIVER_STINT', 'CAR_DRIVER_STINT']].tail(20).head(10)
 
 ```
 
 ```python
 #Driver session stint - a count for each driver of their stints within a particular driving session
-laptimes['DRIVER_SESSION_STINT'] = laptimes.groupby(['CAR_DRIVER','DRIVER_SESSION'])['newstint'].cumsum().astype(int)
-laptimes[['CAR_DRIVER', 'CROSSING_FINISH_LINE_IN_PIT', 'pitting','CAR_STINT', 'DRIVER_STINT', 'CAR_DRIVER_STINT', 'DRIVER_SESSION_STINT']].head()
+laptimes['DRIVER_SESSION_STINT'] = laptimes.groupby(['CAR_DRIVER','DRIVER_SESSION'])['OUTLAP'].cumsum().astype(int)
+laptimes[['CAR_DRIVER', 'CROSSING_FINISH_LINE_IN_PIT', 'INLAP','CAR_STINT', 'DRIVER_STINT', 'CAR_DRIVER_STINT', 'DRIVER_SESSION_STINT']].head()
+
 ```
 
 ## Lap Counts Within Stints
@@ -184,7 +189,7 @@ Using those additional columns, we should be able to start creating reports by d
 
 ```python
 import qgrid
-qgrid.show_grid(laptimes[['LAP_NUMBER', 'NUMBER', 'CAR_DRIVER',  'pitting', 'CAR_STINT', 
+qgrid.show_grid(laptimes[['LAP_NUMBER', 'NUMBER', 'CAR_DRIVER',  'INLAP', 'CAR_STINT', 
                           'CAR_DRIVER_STINT', 'DRIVER_STINT', 'DRIVER_SESSION', 'DRIVER_SESSION_STINT']])
 ```
 
