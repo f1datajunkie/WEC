@@ -156,6 +156,26 @@ laptimes['DRIVER_SESSION_STINT'] = laptimes.groupby(['CAR_DRIVER','DRIVER_SESSIO
 laptimes[['CAR_DRIVER', 'CROSSING_FINISH_LINE_IN_PIT', 'pitting','CAR_STINT', 'DRIVER_STINT', 'CAR_DRIVER_STINT', 'DRIVER_SESSION_STINT']].head()
 ```
 
+## Lap Counts Within Stints
+
+It may be convenient to keep track of lap counts within stints.
+
+```python
+# lap count by car stint - that is, between each pit stop
+laptimes['LAPS_CAR_STINT'] = laptimes.groupby(['NUMBER','CAR_STINT']).cumcount()+1
+
+#lap count by driver
+laptimes['LAPS_DRIVER'] = laptimes.groupby('CAR_DRIVER').cumcount()+1
+
+#lap count by driver session
+laptimes['LAPS_DRIVER_SESSION'] = laptimes.groupby(['CAR_DRIVER','DRIVER_SESSION']).cumcount()+1
+
+#lap count by driver stint
+laptimes['LAPS_DRIVER_STINT'] = laptimes.groupby(['CAR_DRIVER','DRIVER_STINT']).cumcount()+1
+
+laptimes[['LAPS_CAR_STINT', 'LAPS_DRIVER', 'LAPS_DRIVER_SESSION', 'LAPS_DRIVER_STINT']].tail()
+```
+
 ## Basic Individal Driver Reports
 
 Using those additional columns, we should be able to start creating reports by driver by facetting on individual drivers.
