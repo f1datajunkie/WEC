@@ -290,6 +290,22 @@ laptimes['CHECK_ELAPSED_S'] = laptimes.groupby('NUMBER')['LAP_TIME_S'].cumsum()
 laptimes[['ELAPSED','ELAPSED_S','CHECK_ELAPSED_S']].tail()
 ```
 
+We can use the position to identify the leader on each lap and from that a count of leadlap number for each car:
+
+```python
+#Find position based on accumulated laptime
+laptimes = laptimes.sort_values('ELAPSED_S')
+laptimes['POS'] = laptimes.groupby('LAP_NUMBER')['ELAPSED_S'].rank()
+
+#Find leader naively
+laptimes['leader'] = laptimes['POS']==1
+
+#Find lead lap number
+laptimes['LEAD_LAP_NUMBER'] = laptimes['leader'].cumsum()
+
+laptimes[['LAP_NUMBER','LEAD_LAP_NUMBER']].tail()
+```
+
 ```python
 
 ```
