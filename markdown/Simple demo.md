@@ -317,6 +317,56 @@ def sample_laptimes(df, driver,driversession,driversessionstint=None, inlap=Fals
 sample_laptimes(laptimes,'56_1', 1, 2)
 ```
 
+### Some Simple Linear Models
+
+Fitted without explanation... we should only accept models that appear to fit, i.e. that have a low error...
+
+```python
+import seaborn as sns
+
+sns.lmplot(x='index', y='LAP_TIME_S', data=sample_laptimes(laptimes,'56_1', 1, 2).reset_index());
+
+```
+
+We can also increase the order of the fit line (the `ci` parameter toggles the confidence bounds display):
+
+```python
+sns.lmplot(x='index', y='LAP_TIME_S', data=sample_laptimes(laptimes,'56_1', 1, 2).reset_index(),
+           order = 2, ci=None);
+
+```
+
+```python
+#Simple model
+import statsmodels.api as sm
+
+
+Y = sample_laptimes(laptimes,'56_1', 1, 2).reset_index(drop=True)
+X = Y.index.values
+X = sm.add_constant(X)
+
+model = sm.OLS(Y, X).fit()
+predictions = model.predict(X) 
+
+print_model = model.summary()
+print(print_model)
+```
+
+```python
+p = model.params
+
+ax = pd.DataFrame(Y).reset_index().plot(kind='scatter', x='index', y='LAP_TIME_S')
+ax.plot(X, p.const + p.x1 * X);
+```
+
+```python
+import matplotlib.pyplot as plt
+
+# scatter-plot data
+fig, ax = plt.subplots()
+fig = sm.graphics.plot_fit(model, 0, ax=ax)
+```
+
 ## Simple Position Calculations
 
 Some simple demonstrations of calculating position data.
