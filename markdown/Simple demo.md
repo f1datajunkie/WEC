@@ -101,6 +101,59 @@ def plotLapByNumberDriverWithPit(number):
     
 ```
 
+## Stint Detection
+
+Some simple heuristics for detecting stints:
+
+- car stint: between each pit stop;
+- driver session: session equates to continuous period in car;
+- driver stint: relative to pit stops; this may be renumbered for each session?
+
+```python
+#Driver session
+
+#Create a flag to identify when we enter the pit
+laptimes['pitting'] = laptimes['CROSSING_FINISH_LINE_IN_PIT'] == 'B'
+# Identify a new stint for each car by sifting the pitting flag within car tables
+laptimes['newstint'] = laptimes.groupby('NUMBER')['pitting'].shift(fill_value=True)
+
+laptimes[['DRIVER_NUMBER', 'pitting','newstint']].head()
+```
+
+```python
+#This is a count of the number of times a driver is in a vehicle after a pit who wasn't in it before
+laptimes['driverchange'] = ~laptimes['DRIVER_NUMBER'].eq(laptimes['DRIVER_NUMBER'].shift())
+laptimes['DRIVER_SESSION'] = laptimes.groupby(['NUMBER', 'DRIVER_NUMBER'])['driverchange'].cumsum().astype(int)
+laptimes[['DRIVER_NUMBER', 'driverchange','DRIVER_SESSION']][42:48]
+```
+
+```python
+# Car stint
+#Create a counter for each pit stop - the pit flag is entering pit at end of stint
+#  so a new stint applies on the lap after a pit
+#Find the car stint based on count of pit stops
+laptimes['CAR_STINT'] = laptimes.groupby('NUMBER')['newstint'].cumsum().astype(int)
+
+laptimes[['CROSSING_FINISH_LINE_IN_PIT', 'pitting', 'newstint', 'CAR_STINT']].head()
+```
+
+```python
+#Driver stint - a cumulative count for each driver of their stints
+laptimes['DRIVER_STINT'] = laptimes.groupby('CAR_DRIVER')['newstint'].cumsum().astype(int)
+
+#Let's also derive another identifier - CAR_DRIVER_STINT
+laptimes['CAR_DRIVER_STINT'] = laptimes['CAR_DRIVER'] + '_' + laptimes['DRIVER_STINT'].astype(str)
+
+laptimes[['CAR_DRIVER', 'CROSSING_FINISH_LINE_IN_PIT', 'pitting','CAR_STINT', 'DRIVER_STINT', 'CAR_DRIVER_STINT']].tail(20).head(10)
+
+```
+
+```python
+#Driver session stint - a count for each driver of their stints within a particular driving session
+laptimes['DRIVER_SESSION_STINT'] = laptimes.groupby(['CAR_DRIVER','DRIVER_SESSION'])['newstint'].cumsum().astype(int)
+laptimes[['CAR_DRIVER', 'CROSSING_FINISH_LINE_IN_PIT', 'pitting','CAR_STINT', 'DRIVER_STINT', 'CAR_DRIVER_STINT', 'DRIVER_SESSION_STINT']].head()
+```
+
 ```python
 
 ```
