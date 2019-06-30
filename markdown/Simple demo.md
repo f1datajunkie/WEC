@@ -63,6 +63,11 @@ The `DRIVER_NUMBER` is relative to a car. It may be useful to also have a unique
 laptimes['CAR_DRIVER'] = laptimes['NUMBER'] + '_' + laptimes['DRIVER_NUMBER']
 laptimes[['NUMBER','DRIVER_NUMBER','CAR_DRIVER']].head()
 ```
+
+## Quick demo chart
+
+Some simple plots to show how we can use widgets etc.
+
 ```python
 laptimes['LAP_TIME_S'] = laptimes['LAP_TIME'].apply(getTime)
 laptimes[['LAP_TIME','LAP_TIME_S']].head()
