@@ -273,6 +273,23 @@ interact(laptime_charts, car=cars, driver=drivers, driversession=driversessions)
 #We could perhaps also add check boxes to suppress inlap and outlap?
 ```
 
+## Simple Position Calculations
+
+Some simple demonstrations of calculating position data.
+
+Naively, calculate position based on lap number and accumulated time (there may be complications based on whether the lead car records a laptine from pit entry...).
+
+```python
+#Find accumulated time in seconds
+laptimes['ELAPSED_S']=laptimes['ELAPSED'].apply(getTime)
+
+
+#Check
+laptimes['CHECK_ELAPSED_S'] = laptimes.groupby('NUMBER')['LAP_TIME_S'].cumsum()
+
+laptimes[['ELAPSED','ELAPSED_S','CHECK_ELAPSED_S']].tail()
+```
+
 ```python
 
 ```
