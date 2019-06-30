@@ -295,6 +295,28 @@ interact(laptime_charts, car=cars, driver=drivers, driversession=driversessions,
 
 ```
 
+## Simple Model
+
+An example of creating a simple model using some explcitly pulled out data.
+
+```python
+def sample_laptimes(df, driver,driversession,driversessionstint=None, inlap=False, outlap=False):
+    df = df[(df['CAR_DRIVER']==driver) & (df['DRIVER_SESSION']== driversession)]
+    if not inlap:
+        df = df[~df['INLAP']]
+    if not outlap:
+        df = df[~df['OUTLAP']]
+        
+    if driversessionstint:
+        return df[df['DRIVER_SESSION_STINT']==driversessionstint]['LAP_TIME_S']
+    
+    return df.pivot(index='LAPS_DRIVER_STINT',
+                    columns='DRIVER_SESSION_STINT',
+                    values='LAP_TIME_S').reset_index(drop=True)
+
+sample_laptimes(laptimes,'56_1', 1, 2)
+```
+
 ## Simple Position Calculations
 
 Some simple demonstrations of calculating position data.
