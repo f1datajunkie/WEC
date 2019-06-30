@@ -138,7 +138,7 @@ laptimes[['DRIVER_NUMBER', 'driverchange','DRIVER_SESSION','LAP_NUMBER']][42:48]
 #Create a counter for each pit stop - the pit flag is entering pit at end of stint
 #  so a new stint applies on the lap after a pit
 #Find the car stint based on count of pit stops
-laptimes['CAR_STINT'] = laptimes.groupby('NUMBER')['newstint'].cumsum().astype(int)
+laptimes['CAR_STINT'] = laptimes.groupby('NUMBER')['OUTLAP'].cumsum().astype(int)
 
 laptimes[['CROSSING_FINISH_LINE_IN_PIT', 'INLAP', 'OUTLAP', 'CAR_STINT']].head()
 ```
