@@ -263,14 +263,35 @@ interact(laptime_chart, car=cars, driver=drivers, driversession=driversessions, 
 ```
 
 ```python
+#Also add check boxes to suppress inlap and outlap?
+inlaps = widgets.Checkbox( value=True, description='Inlap',
+                           disabled=False )
+
+outlaps = widgets.Checkbox( value=True, description='Outlap',
+                           disabled=False )
+
 #Plot laptimes by stint for a specified driver
-def laptime_charts(car, driver, driversession):
-    laptimes[(laptimes['CAR_DRIVER']==driver) &
-                     (laptimes['DRIVER_SESSION']==driversession) ].pivot(index='LAPS_DRIVER_STINT',columns='DRIVER_STINT', values='LAP_TIME_S').reset_index(drop=True).plot()
-interact(laptime_charts, car=cars, driver=drivers, driversession=driversessions);
+def laptime_charts(car, driver, driversession, inlap, outlap):
+    tmp_df = laptimes
+    
+    if not inlap:
+        tmp_df = tmp_df[~tmp_df['INLAP']]
+    if not outlap:
+        tmp_df = tmp_df[~tmp_df['OUTLAP']]
+        
+    tmp_df = tmp_df[(tmp_df['CAR_DRIVER']==driver) &
+                     (tmp_df['DRIVER_SESSION']==driversession) ].pivot(index='LAPS_DRIVER_STINT',
+                                                                       columns='DRIVER_STINT', 
+                                                                       values='LAP_TIME_S').reset_index(drop=True)
+    
+    if not tmp_df.empty:
+        tmp_df.plot()
 
 
-#We could perhaps also add check boxes to suppress inlap and outlap?
+
+interact(laptime_charts, car=cars, driver=drivers, driversession=driversessions, inlap=inlaps, outlap=outlaps);
+
+
 ```
 
 ## Simple Position Calculations
