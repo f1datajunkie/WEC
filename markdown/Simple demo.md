@@ -188,8 +188,84 @@ qgrid.show_grid(laptimes[['LAP_NUMBER', 'NUMBER', 'CAR_DRIVER',  'pitting', 'CAR
                           'CAR_DRIVER_STINT', 'DRIVER_STINT', 'DRIVER_SESSION', 'DRIVER_SESSION_STINT']])
 ```
 
-```python
+## Simple Stint Reports
 
+Using the various stint details, we can pull together a simple set of widgets to allow us to explore times by car / driver.
+
+```python
+import ipywidgets as widgets
+from ipywidgets import interact
+```
+
+```python
+cars = widgets.Dropdown(
+    options=laptimes['NUMBER'].unique(), # value='1',
+    description='Car:', disabled=False )
+
+drivers = widgets.Dropdown(
+    options=laptimes[laptimes['NUMBER']==cars.value]['CAR_DRIVER'].unique(),
+    description='Driver:', disabled=False)
+
+driversessions = widgets.Dropdown(
+    options=laptimes[laptimes['CAR_DRIVER']==drivers.value]['DRIVER_SESSION'].unique(),
+    description='Session:', disabled=False)
+
+driverstints = widgets.Dropdown(
+    options=laptimes[laptimes['DRIVER_SESSION']==driversessions.value]['DRIVER_SESSION_STINT'].unique(),
+    description='Stint:', disabled=False)
+
+def update_drivers(*args):
+    driverlist = laptimes[laptimes['NUMBER']==cars.value]['CAR_DRIVER'].unique()
+    drivers.options = driverlist
+    
+def update_driver_session(*args):
+    driversessionlist = laptimes[(laptimes['CAR_DRIVER']==drivers.value)]['DRIVER_SESSION'].unique()
+    driversessions.options = driversessionlist
+    
+def update_driver_stint(*args):
+    driverstintlist = laptimes[(laptimes['CAR_DRIVER']==drivers.value) &
+                               (laptimes['DRIVER_SESSION']==driversessions.value)]['DRIVER_SESSION_STINT'].unique()
+    driverstints.options = driverstintlist
+    
+cars.observe(update_drivers, 'value')
+drivers.observe(update_driver_session,'value')
+driversessions.observe(update_driver_stint,'value')
+
+def laptime_table(car, driver, driversession, driverstint):
+    #just basic for now...
+    display(laptimes[(laptimes['CAR_DRIVER']==driver) &
+                     (laptimes['DRIVER_SESSION']==driversession) &
+                     (laptimes['DRIVER_SESSION_STINT']==driverstint) ][['CAR_DRIVER', 'DRIVER_SESSION',
+                                                         'DRIVER_STINT', 'DRIVER_SESSION_STINT',
+                                                         'LAP_NUMBER','LAP_TIME', 'LAP_TIME_S']])
+    
+interact(laptime_table, car=cars, driver=drivers, driversession=driversessions, driverstint=driverstints);
+
+```
+
+```python
+def laptime_chart(car, driver, driversession, driverstint):
+    tmp_df = laptimes[(laptimes['CAR_DRIVER']==driver) &
+                     (laptimes['DRIVER_SESSION']==driversession) &
+                     (laptimes['DRIVER_SESSION_STINT']==driverstint) ][['CAR_DRIVER', 'DRIVER_SESSION',
+                                                         'DRIVER_STINT', 'DRIVER_SESSION_STINT',
+                                                         'LAP_NUMBER','LAP_TIME', 'LAP_TIME_S']]['LAP_TIME_S'].reset_index(drop=True)
+    if not tmp_df.empty:
+        tmp_df.plot()
+        
+interact(laptime_chart, car=cars, driver=drivers, driversession=driversessions, driverstint=driverstints);
+
+```
+
+```python
+#Plot laptimes by stint for a specified driver
+def laptime_charts(car, driver, driversession):
+    laptimes[(laptimes['CAR_DRIVER']==driver) &
+                     (laptimes['DRIVER_SESSION']==driversession) ].pivot(index='LAPS_DRIVER_STINT',columns='DRIVER_STINT', values='LAP_TIME_S').reset_index(drop=True).plot()
+interact(laptime_charts, car=cars, driver=drivers, driversession=driversessions);
+
+
+#We could perhaps also add check boxes to suppress inlap and outlap?
 ```
 
 ```python
