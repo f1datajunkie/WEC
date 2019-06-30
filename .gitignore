@@ -1,3 +1,8 @@
 .ipynb_checkpoints
 .DS_Store
+.cache
+.local
+.ipython
+.jupyter
+__pycache__
 timingdata
