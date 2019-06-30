@@ -1,0 +1,4 @@
+jupytext
+
+matplotlib
+pandas
