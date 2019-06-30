@@ -154,6 +154,22 @@ laptimes['DRIVER_SESSION_STINT'] = laptimes.groupby(['CAR_DRIVER','DRIVER_SESSIO
 laptimes[['CAR_DRIVER', 'CROSSING_FINISH_LINE_IN_PIT', 'pitting','CAR_STINT', 'DRIVER_STINT', 'CAR_DRIVER_STINT', 'DRIVER_SESSION_STINT']].head()
 ```
 
+## Basic Individal Driver Reports
+
+Using those additional columns, we should be able to start creating reports by driver by facetting on individual drivers.
+
+(Note: it might be interesting to do some datasette demos with particular facets, which make it easy to select teams, drivers, etc.)
+
+```python
+import qgrid
+qgrid.show_grid(laptimes[['LAP_NUMBER', 'NUMBER', 'CAR_DRIVER',  'pitting', 'CAR_STINT', 
+                          'CAR_DRIVER_STINT', 'DRIVER_STINT', 'DRIVER_SESSION', 'DRIVER_SESSION_STINT']])
+```
+
+```python
+
+```
+
 ```python
 
 ```
