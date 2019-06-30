@@ -76,5 +76,16 @@ def plotLapByNumberDriver(number):
 ```
 
 ```python
+@interact(number=laptimes['NUMBER'].unique().tolist(),)
+def plotLapByNumberDriverWithPit(number):
+    # We can pivot long to wide on driver number, then plot all cols against the lapnumber index
+    #Grap the matplotli axes so we can overplot onto them
+    ax = laptimes[laptimes['NUMBER']==number].pivot(index='LAP_NUMBER',columns='DRIVER_NUMBER', values='LAP_TIME_S').plot()
+    #Also add in pit laps
+    laptimes[(laptimes['NUMBER']==number) & (laptimes['CROSSING_FINISH_LINE_IN_PIT']=='B')].plot.scatter(x='LAP_NUMBER',y='LAP_TIME_S', ax=ax)
+    
+```
+
+```python
 
 ```
