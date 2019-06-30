@@ -5,3 +5,7 @@ pandas
 
 #We need to enable the qgrid extension in postBuild in order to display it
 qgrid
+
+#Stats packages
+seaborn
+statsmodels
