@@ -46,6 +46,10 @@ url = 'http://fiawec.alkamelsystems.com/Results/08_2018-2019/07_SPA%20FRANCORCHA
 ```python
 laptimes = pd.read_csv(url, sep=';').dropna(how='all', axis=1)
 laptimes.columns = [c.strip() for c in laptimes.columns]
+
+#Tidy the data a little... car and driver number are not numbers
+laptimes[['NUMBER','DRIVER_NUMBER']] = laptimes[['NUMBER','DRIVER_NUMBER']].astype(str)
+
 laptimes.head()
 ```
 
@@ -53,6 +57,12 @@ laptimes.head()
 laptimes.columns
 ```
 
+The `DRIVER_NUMBER` is relative to a car. It may be useful to also have a unique driver number, `CAR_DRIVER`:
+
+```python
+laptimes['CAR_DRIVER'] = laptimes['NUMBER'] + '_' + laptimes['DRIVER_NUMBER']
+laptimes[['NUMBER','DRIVER_NUMBER','CAR_DRIVER']].head()
+```
 ```python
 laptimes['LAP_TIME_S'] = laptimes['LAP_TIME'].apply(getTime)
 laptimes[['LAP_TIME','LAP_TIME_S']].head()
