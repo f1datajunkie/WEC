@@ -328,6 +328,26 @@ laptimes['LEAD_LAP_NUMBER'] = laptimes['leader'].cumsum()
 laptimes[['LAP_NUMBER','LEAD_LAP_NUMBER']].tail()
 ```
 
+## Simple Position Chart - Top 10 At End
+
+Find last lap number, then get top 10 on that lap.
+
+```python
+LAST_LAP = laptimes['LEAD_LAP_NUMBER'].max()
+LAST_LAP
+```
+
+```python
+#Find top 10 at end
+cols = ['NUMBER','TEAM', 'DRIVER_NAME', 'CLASS','LAP_NUMBER','ELAPSED']
+laptimes[laptimes['LEAD_LAP_NUMBER']==LAST_LAP].sort_values(['LEAD_LAP_NUMBER', 'POS'])[cols].head(10)
+
+```
+
+```python
+laptimes.columns
+```
+
 ```python
 
 ```
