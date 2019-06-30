@@ -122,9 +122,11 @@ laptimes[['DRIVER_NUMBER', 'pitting','newstint']].head()
 
 ```python
 #This is a count of the number of times a driver is in a vehicle after a pit who wasn't in it before
-laptimes['driverchange'] = ~laptimes['DRIVER_NUMBER'].eq(laptimes['DRIVER_NUMBER'].shift())
+#Also set overall lap = 1 to be a driver change
+laptimes['driverchange'] = (~laptimes['DRIVER_NUMBER'].eq(laptimes['DRIVER_NUMBER'].shift())) | (laptimes['LAP_NUMBER']==1)
+
 laptimes['DRIVER_SESSION'] = laptimes.groupby(['NUMBER', 'DRIVER_NUMBER'])['driverchange'].cumsum().astype(int)
-laptimes[['DRIVER_NUMBER', 'driverchange','DRIVER_SESSION']][42:48]
+laptimes[['DRIVER_NUMBER', 'driverchange','DRIVER_SESSION','LAP_NUMBER']][42:48]
 ```
 
 ```python
