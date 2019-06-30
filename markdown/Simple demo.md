@@ -36,7 +36,7 @@ import sys
 sys.path.append("..")
 
 #Import contents of the utils.py package in the parent directory
-from utils import *
+from py.utils import *
 ```
 
 ```python
