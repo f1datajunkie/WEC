@@ -270,6 +270,7 @@ inlaps = widgets.Checkbox( value=True, description='Inlap',
 outlaps = widgets.Checkbox( value=True, description='Outlap',
                            disabled=False )
 
+
 #Plot laptimes by stint for a specified driver
 def laptime_charts(car, driver, driversession, inlap, outlap):
     tmp_df = laptimes
@@ -281,7 +282,7 @@ def laptime_charts(car, driver, driversession, inlap, outlap):
         
     tmp_df = tmp_df[(tmp_df['CAR_DRIVER']==driver) &
                      (tmp_df['DRIVER_SESSION']==driversession) ].pivot(index='LAPS_DRIVER_STINT',
-                                                                       columns='DRIVER_STINT', 
+                                                                       columns='DRIVER_SESSION_STINT', 
                                                                        values='LAP_TIME_S').reset_index(drop=True)
     
     if not tmp_df.empty:
