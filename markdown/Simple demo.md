@@ -41,6 +41,7 @@ from py.utils import *
 
 ```python
 url = 'http://fiawec.alkamelsystems.com/Results/08_2018-2019/07_SPA%20FRANCORCHAMPS/267_FIA%20WEC/201905041330_Race/Hour%206/23_Analysis_Race_Hour%206.CSV'
+
 ```
 
 ```python
@@ -414,10 +415,6 @@ LAST_LAP
 cols = ['NUMBER','TEAM', 'DRIVER_NAME', 'CLASS','LAP_NUMBER','ELAPSED']
 laptimes[laptimes['LEAD_LAP_NUMBER']==LAST_LAP].sort_values(['LEAD_LAP_NUMBER', 'POS'])[cols].head(10)
 
-```
-
-```python
-laptimes.columns
 ```
 
 ```python
