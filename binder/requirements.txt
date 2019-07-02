@@ -9,3 +9,5 @@ qgrid
 #Stats packages
 seaborn
 statsmodels
+
+sklearn
