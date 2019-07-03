@@ -249,6 +249,45 @@ laptimes_summary_stats.reset_index().plot(kind='scatter', x='LEAD_LAP_NUMBER', y
 
 *(It doesn't make any difference if we add the summary stats in too...)*
 
+
+### Streak Detection
+
+There are several receipes out there for streak detection. It may be useful to try to collect them and then come up with a best practice way of calcualting streaks?
+
+```python
+colours_df = pd.DataFrame({'event':[c!='red' for c in colours]})
+colours_df.head()
+```
+
+```python
+#via https://stackoverflow.com/a/51626783/454773
+
+def streak(dfc):
+    ''' Streak calculation: take a dataframe column containing a list of Boolean values
+        and return a list of paired values containing index values of the start and end of each streak
+        for the True boolean value. '''
+    return ((~dfc).cumsum()[dfc]
+            .reset_index()
+            .groupby(['event'])['index']
+            .agg(['first','last'])
+            .values
+            .tolist())
+
+streak(colours_df['event']), streak(~colours_df['event'])
+```
+
+```python
+def streak_len(streak_list, lap_index = 1):
+    ''' Return a dataframe showing streak lap start, end, length. '''
+    tmp_df = pd.DataFrame(streak_list, columns=['Start', 'Stop'])
+    tmp_df['Length'] = tmp_df['Stop'] - tmp_df['Start'] + 1
+    #Align index to first lap number
+    tmp_df.index += lap_index
+    return tmp_df
+
+streak_len( streak( ~colours_df['event'] ) )
+```
+
 ```python
 
 ```
