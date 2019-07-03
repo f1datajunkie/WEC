@@ -94,7 +94,7 @@ Start by identifying median and standard deviation of laptimes on a per lead lap
 #laptimes_summary_stats = laptimes.groupby(['LEAD_LAP_NUMBER']).agg(median_lap_time_s=('LAP_TIME_S', 'median'),
 #                                                                   sd_lap_time_s=('LAP_TIME_S', 'std'))
 
-laptimes_summary_stats = laptimes.groupby(['LEAD_LAP_NUMBER']).agg({'LAP_TIME_S':['mean', 'median','std']})
+laptimes_summary_stats = laptimes.groupby(['LEAD_LAP_NUMBER']).agg({'LAP_TIME_S':['mean', 'median','std', 'max']})
 
 laptimes_summary_stats.columns = laptimes_summary_stats.columns.get_level_values(1)
 
@@ -102,7 +102,43 @@ laptimes_summary_stats.head()
 ```
 
 ```python
+laptimes_summary_stats.plot()
+```
+
+Okay, so we have at least one outlier.
+
+Let's look for others... say, laptimes with a z-score of more than 3, which is to say, more than 3 standard deviations away from the mean.
+
+```python
+laptimes[(np.abs(stats.zscore(laptimes['LAP_TIME_S'])) > 3)]
+```
+
+We don't really want `NaN` values in the laptimes, but for now lets create a set of "clean" laptimes that do `NaN` the outliers.
+
+```python
+from scipy import stats
+import numpy as np
+from numpy import NaN
+
+laptimes['CLEAN_LAP_TIME_S'] = laptimes['LAP_TIME_S']
+laptimes.loc[np.abs(stats.zscore(laptimes['LAP_TIME_S'])) > 3, 'CLEAN_LAP_TIME_S'] = NaN
+```
+
+Now let's create the summary stats over the cleaned data.
+
+```python
+laptimes_summary_stats = laptimes.groupby(['LEAD_LAP_NUMBER']).agg({'CLEAN_LAP_TIME_S':['mean', 'median','std', 'max']})
+
+laptimes_summary_stats.columns = laptimes_summary_stats.columns.get_level_values(1)
+
+```
+
+```python
 laptimes_summary_stats.reset_index().plot(kind='scatter', x='LEAD_LAP_NUMBER', y='median')
+```
+
+```python
+laptimes_summary_stats.reset_index().plot(kind='scatter', x='LEAD_LAP_NUMBER', y='std')
 ```
 
 ```python
@@ -113,7 +149,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 scatter3d = plt.figure().gca(projection='3d')
-scatter3d.scatter(laptimes_summary_stats.index, laptimes_summary_stats['median'], laptimes_summary_stats['std'])
+scatter3d.scatter(laptimes_summary_stats.index, laptimes_summary_stats['std'], laptimes_summary_stats['median'])
 ```
 
 ## Pit Events Per Lap
@@ -121,6 +157,9 @@ scatter3d.scatter(laptimes_summary_stats.index, laptimes_summary_stats['median']
 Is there any signal to be had from pit events per lap?
 
 ```python
+%matplotlib inline
+sns.set(rc={'figure.figsize':(20,10)})
+
 laptimes['INLAP'] = laptimes['CROSSING_FINISH_LINE_IN_PIT']== 'B'
 laptimes.groupby('LEAD_LAP_NUMBER')['INLAP'].apply(lambda x: x.sum()).plot(kind='bar');
 ```
@@ -136,27 +175,39 @@ Can we build a simple K-means classifier with K=2 to identify slow laps?
 
 ```python
 from sklearn.cluster import KMeans
+```
 
+Let's just do something really simple and see if we can classify based on the median and standard deviation of the laptimes.
+
+```python
+kmeans = KMeans(n_clusters=2, random_state=0).fit( laptimes_summary_stats[['median', 'std']] )
 ```
 
 ```python
-from numpy import NaN
+import numpy as np
 
-tmp = laptimes[['LEAD_LAP_NUMBER','NUMBER','LAP_TIME_S','INLAP']]
+laptimes_summary_stats['CLUSTER_GROUP'] = kmeans.labels_
 
-#Let's void times that are pit times
-tmp.loc[tmp['INLAP'], 'LAP_TIME_S'] = NaN
+#colours = np.where(laptimes_summary_stats['CLUSTER_GROUP'], 'red', 'green')
+#laptimes_summary_stats.reset_index().plot(kind='scatter', x='LEAD_LAP_NUMBER', y='median', color=colours)
+ax = sns.scatterplot(x="LEAD_LAP_NUMBER", y="median", hue = 'CLUSTER_GROUP', data=laptimes_summary_stats.reset_index())
 
-#Also set overlong laptimes to NA
-LONG_LAP_TIME = 400
-tmp.loc[tmp['LAP_TIME_S'] > LONG_LAP_TIME, 'LAP_TIME_S'] = NaN
+```
+
+How about over all the laptimes? Though we need to find a way of handling `NaN`s and maybe doing something to nromalise pit stop times to something closer to the median lap time on a given lead lap?
+
+```python
+tmp = laptimes[['LEAD_LAP_NUMBER','NUMBER','CLEAN_LAP_TIME_S','INLAP']]
+
+#Let's try voiding times that are pit times
+tmp.loc[tmp['INLAP'], 'CLEAN_LAP_TIME_S'] = NaN
 
 
 # Now create a table of car laptimes by leadlap
 
 #Some cars may have multiple laptimes recorded on one lead lap
 #in this case, we need to reduce the multiple times to a single time, eg min, or mean
-car_by_lap = tmp.pivot_table(index='LEAD_LAP_NUMBER',columns='NUMBER', values='LAP_TIME_S', aggfunc='min')
+car_by_lap = tmp.pivot_table(index='LEAD_LAP_NUMBER',columns='NUMBER', values='CLEAN_LAP_TIME_S', aggfunc='min')
 car_by_lap.head()
 ```
 
@@ -175,12 +226,10 @@ kmeans = KMeans(n_clusters=2, random_state=0).fit( car_by_lap_clean )
 Now let's highlight clustered laps and see if we've picked out the slow ones...
 
 ```python
-import numpy as np
-
 laptimes_summary_stats['CLUSTER_GROUP'] = kmeans.labels_
 
 colours = np.where(laptimes_summary_stats['CLUSTER_GROUP'], 'red', 'green')
-#ax = sns.scatterplot(x="total_bill", y="tip", hue = 'CLUSTER_GROUP' data=tips)
+#ax = sns.scatterplot(x="LEAD_LAP_NUMBER", y="median", hue = 'CLUSTER_GROUP' data=tips)
 laptimes_summary_stats.reset_index().plot(kind='scatter', x='LEAD_LAP_NUMBER', y='median', color=colours)
 ```
 
@@ -190,6 +239,8 @@ Seems to be pretty good, though around lap 25 a couple of misclassifications, pe
 laptimes_summary_stats['unit']=1
 laptimes_summary_stats.reset_index().plot(kind='scatter', x='LEAD_LAP_NUMBER', y='unit', color=colours)
 ```
+
+*(It doesn't make any difference if we add the summary stats in too...)*
 
 ```python
 
