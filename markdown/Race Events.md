@@ -194,7 +194,10 @@ ax = sns.scatterplot(x="LEAD_LAP_NUMBER", y="median", hue = 'CLUSTER_GROUP', dat
 
 ```
 
-How about over all the laptimes? Though we need to find a way of handling `NaN`s and maybe doing something to nromalise pit stop times to something closer to the median lap time on a given lead lap?
+*(The classification is worsned, if anything, if we add the leader laptime deltas in.)*
+
+
+How about over all the laptimes? Though we need to find a way of handling `NaN`s and maybe doing something to normalise pit stop times to something closer to the median lap time on a given lead lap? Or do we want to keep that extra signal in?
 
 ```python
 tmp = laptimes[['LEAD_LAP_NUMBER','NUMBER','CLEAN_LAP_TIME_S','INLAP']]
@@ -234,6 +237,10 @@ laptimes_summary_stats.reset_index().plot(kind='scatter', x='LEAD_LAP_NUMBER', y
 ```
 
 Seems to be pretty good, though around lap 25 a couple of misclassifications, perhaps?
+
+*(Using actual INLAP times, rather than non-pitting lead lap average times for INLAPS, doesn't seem to affect the classification?)*
+
+This also differs from the simple classification based on median/std by identifying lead lap 24 as an atypical laptime event?
 
 ```python
 laptimes_summary_stats['unit']=1
