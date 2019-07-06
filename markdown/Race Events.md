@@ -110,14 +110,15 @@ Okay, so we have at least one outlier.
 Let's look for others... say, laptimes with a z-score of more than 3, which is to say, more than 3 standard deviations away from the mean.
 
 ```python
+from scipy import stats
+import numpy as np
+
 laptimes[(np.abs(stats.zscore(laptimes['LAP_TIME_S'])) > 3)]
 ```
 
 We don't really want `NaN` values in the laptimes, but for now lets create a set of "clean" laptimes that do `NaN` the outliers.
 
 ```python
-from scipy import stats
-import numpy as np
 from numpy import NaN
 
 laptimes['CLEAN_LAP_TIME_S'] = laptimes['LAP_TIME_S']
@@ -324,10 +325,12 @@ laptimes['RACE_HISTORY_LAP_TIME_S'] = (winner_mean_laptime_s * laptimes['LEAD_LA
 ```
 
 ```python
-#Lat's filter, for now, by just the top 10 cars
+#Let's filter, for now, by just the top 10 cars
 top10 = laptimes[laptimes['LEAD_LAP_NUMBER']==LAST_LAP].sort_values(['LEAD_LAP_NUMBER', 'POS'])[['NUMBER']].reset_index(drop=True).head(10)
 top10.index +=1
 ```
+
+We can add highlighted areas to the chart to identify atypical laps.
 
 ```python
 sns.set(style="ticks")
