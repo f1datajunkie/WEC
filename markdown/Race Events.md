@@ -121,6 +121,9 @@ import numpy as np
 from numpy import NaN
 
 laptimes['CLEAN_LAP_TIME_S'] = laptimes['LAP_TIME_S']
+
+#If the zscore on a laptime is greater than three, set the CLEAN_LAP_TIME_S value to NaN
+# else use the original value
 laptimes.loc[np.abs(stats.zscore(laptimes['LAP_TIME_S'])) > 3, 'CLEAN_LAP_TIME_S'] = NaN
 ```
 
@@ -190,7 +193,8 @@ laptimes_summary_stats['CLUSTER_GROUP'] = kmeans.labels_
 
 #colours = np.where(laptimes_summary_stats['CLUSTER_GROUP'], 'red', 'green')
 #laptimes_summary_stats.reset_index().plot(kind='scatter', x='LEAD_LAP_NUMBER', y='median', color=colours)
-ax = sns.scatterplot(x="LEAD_LAP_NUMBER", y="median", hue = 'CLUSTER_GROUP', data=laptimes_summary_stats.reset_index())
+ax = sns.scatterplot(x="LEAD_LAP_NUMBER", y="median", hue = 'CLUSTER_GROUP',
+                     data=laptimes_summary_stats.reset_index())
 
 ```
 
@@ -210,7 +214,7 @@ tmp.loc[tmp['INLAP'], 'CLEAN_LAP_TIME_S'] = NaN
 
 #Some cars may have multiple laptimes recorded on one lead lap
 #in this case, we need to reduce the multiple times to a single time, eg min, or mean
-car_by_lap = tmp.pivot_table(index='LEAD_LAP_NUMBER',columns='NUMBER', values='CLEAN_LAP_TIME_S', aggfunc='min')
+car_by_lap = tmp.pivot_table(index='LEAD_LAP_NUMBER', columns='NUMBER', values='CLEAN_LAP_TIME_S', aggfunc='min')
 car_by_lap.head()
 ```
 
@@ -232,6 +236,7 @@ Now let's highlight clustered laps and see if we've picked out the slow ones...
 laptimes_summary_stats['CLUSTER_GROUP'] = kmeans.labels_
 
 colours = np.where(laptimes_summary_stats['CLUSTER_GROUP'], 'red', 'green')
+
 #ax = sns.scatterplot(x="LEAD_LAP_NUMBER", y="median", hue = 'CLUSTER_GROUP' data=tips)
 laptimes_summary_stats.reset_index().plot(kind='scatter', x='LEAD_LAP_NUMBER', y='median', color=colours)
 ```
@@ -252,10 +257,13 @@ laptimes_summary_stats.reset_index().plot(kind='scatter', x='LEAD_LAP_NUMBER', y
 
 ### Streak Detection
 
-There are several receipes out there for streak detection. It may be useful to try to collect them and then come up with a best practice way of calcualting streaks?
+There are several receipes out there for streak detection. It may be useful to try to collect them and then come up with a best practice way of calculating streaks?
 
 ```python
 colours_df = pd.DataFrame({'event':[c!='red' for c in colours]})
+#Set the index to be lead lap number - indexed on 1 rather than 0
+colours_df.index += 1
+
 colours_df.head()
 ```
 
