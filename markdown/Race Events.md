@@ -51,8 +51,17 @@ laptimes['leader'] = laptimes['POS']==1
 #Find lead lap number
 laptimes['LEAD_LAP_NUMBER'] = laptimes['leader'].cumsum()
 
-
 laptimes.head()
+```
+
+```python
+# TO DO - check laps where a car is lapped or unlaps to see we have the correct lap, lead lap and time data
+
+# A car may miss a lead lap number if it is lapped. So in the race history what happens?
+```
+
+```python
+
 ```
 
 ## LapTime Distribution
@@ -77,6 +86,7 @@ laptimes.groupby(['LEAD_LAP_NUMBER'])['LAP_TIME_S'].min().diff()[1:].plot()
 ```
 
 ```python
+#WHy find the min here? TO DO
 ax2 = laptimes.groupby(['LEAD_LAP_NUMBER'])['LAP_TIME_S'].min().diff().fillna(0).plot(kind='bar')
 sns.boxplot(x="LEAD_LAP_NUMBER", y="LAP_TIME_S", data=laptimes[laptimes['LAP_TIME_S']<500], ax=ax2)
 sns.set(rc={'figure.figsize':(20,10)})
@@ -321,7 +331,9 @@ winner_mean_laptime_s
 
 ```python
 #Calculate the "race history" laptimes
-laptimes['RACE_HISTORY_LAP_TIME_S'] = (winner_mean_laptime_s * laptimes['LEAD_LAP_NUMBER']) - laptimes['ELAPSED_S']
+#?? laptimes['LEAD_LAP_NUMBER'] gives track position? laptimes['LAP_NUMBER'] give race history
+laptimes['RACE_HISTORY_ELAPSED_LAP_TIME_S'] = (winner_mean_laptime_s * laptimes['LAP_NUMBER']) - laptimes['ELAPSED_S']
+
 ```
 
 ```python
@@ -339,7 +351,7 @@ plt.style.use("dark_background")
 #Setting the palette size is a hack: https://github.com/mwaskom/seaborn/issues/1515#issuecomment-482189290
 data = laptimes[laptimes['NUMBER'].isin(top10['NUMBER'])]
 
-ax = sns.lineplot(x="LEAD_LAP_NUMBER", y="RACE_HISTORY_LAP_TIME_S",
+ax = sns.lineplot(x="LEAD_LAP_NUMBER", y="RACE_HISTORY_ELAPSED_LAP_TIME_S",
                   units = 'NUMBER', hue = 'NUMBER', palette=sns.color_palette("Set1", len(data['NUMBER'].unique())),
                   estimator=None, lw=1,
                   data=data)
@@ -349,6 +361,23 @@ ax = sns.lineplot(x="LEAD_LAP_NUMBER", y="RACE_HISTORY_LAP_TIME_S",
 def atypical_lap_band(row, ax):
     ax.axvspan(row['Start']-0.5, row['Stop']+0.5, alpha=0.5, color='lightyellow')
     
+streak_len( streak( ~colours_df['event'] ) ).apply(lambda x: atypical_lap_band(x, ax), axis=1);
+```
+
+TO DO - if a car is lapped it may have more that on lap time per lead lap - we need to plot the one with largest elapsed time. ??Are we losing a row somewhere where a car is lapped?
+
+```python
+# Race history chart - if we plot the lead lap, we get the track position?
+```
+
+```python
+data = laptimes[laptimes['NUMBER'].isin(top10['NUMBER'])].groupby(['LEAD_LAP_NUMBER','NUMBER'])['RACE_HISTORY_ELAPSED_LAP_TIME_S'].max().reset_index()
+
+ax = sns.lineplot(x="LEAD_LAP_NUMBER", y="RACE_HISTORY_ELAPSED_LAP_TIME_S",
+                  units = 'NUMBER', hue = 'NUMBER', palette=sns.color_palette("Set1", len(data['NUMBER'].unique())),
+                  estimator=None, lw=1,
+                  data=data)
+
 streak_len( streak( ~colours_df['event'] ) ).apply(lambda x: atypical_lap_band(x, ax), axis=1);
 ```
 
@@ -457,15 +486,16 @@ neutralised_winner_mean_laptime_s
 
 ```python
 #Calculate the "neutralised race history" laptimes
-laptimes['NEUTRALISED_RACE_HISTORY_LAP_TIME_S'] = (neutralised_winner_mean_laptime_s * laptimes['LEAD_LAP_NUMBER']) - laptimes['ELAPSED_NEUTRALISED_LAP_TIME_S']
+#If we multiply by lead_lap_number we can get track position? TO DO
+laptimes['NEUTRALISED_RACE_HISTORY_ELAPSED_LAP_TIME_S'] = (neutralised_winner_mean_laptime_s * laptimes['LAP_NUMBER']) - laptimes['ELAPSED_NEUTRALISED_LAP_TIME_S']
 
 ```
 
 ```python
 #Should make a function for this
-data = laptimes[laptimes['NUMBER'].isin(top10['NUMBER'])]
+data = laptimes[laptimes['NUMBER'].isin(top10['NUMBER'])].groupby(['LEAD_LAP_NUMBER','NUMBER'])['NEUTRALISED_RACE_HISTORY_ELAPSED_LAP_TIME_S'].max().reset_index()
 
-ax = sns.lineplot(x="LEAD_LAP_NUMBER", y="NEUTRALISED_RACE_HISTORY_LAP_TIME_S",
+ax = sns.lineplot(x="LEAD_LAP_NUMBER", y="NEUTRALISED_RACE_HISTORY_ELAPSED_LAP_TIME_S",
                   units = 'NUMBER', hue = 'NUMBER', palette=sns.color_palette("Set1", len(data['NUMBER'].unique())),
                   estimator=None, lw=1,
                   data=data)
@@ -476,6 +506,14 @@ def atypical_lap_band(row, ax):
     ax.axvspan(row['Start']-0.5, row['Stop']+0.5, alpha=0.5, color='lightyellow')
     
 streak_len( streak( ~colours_df['event'] ) ).apply(lambda x: atypical_lap_band(x, ax), axis=1);
+```
+
+```python
+top10
+```
+
+```python
+laptimes[(laptimes['NUMBER']=='31') & (laptimes['LAP_NUMBER']>70)& (laptimes['LAP_NUMBER']<90) ][['LAP_NUMBER','LEAD_LAP_NUMBER']]
 ```
 
 ```python
