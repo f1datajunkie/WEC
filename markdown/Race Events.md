@@ -435,7 +435,7 @@ colours_df.loc[colours_df.index.isin(NEUTRALISED_LAPS), 'desired'] = NEUTRALISED
 colours_df['desired'].fillna(method='ffill', inplace=True)
 
 ##?? maybe we should just set the target time to the mean of the winner on just the typical laps?
-winners_mean_typical = laptimes[laptimes['NUMBER']==winner]['LAP_TIME_S'].mean().round(decimals=3)
+winners_mean_typical = laptimes[(laptimes['NUMBER']==winner) & ~(laptimes['LEAD_LAP_NUMBER'].isin(NEUTRALISED_LAPS))]['LAP_TIME_S'].mean().round(decimals=3)
 colours_df['desired'] = 0
 colours_df.loc[colours_df.index.isin(NEUTRALISED_LAPS), 'desired'] = winners_mean_typical
 colours_df['desired'].fillna(method='ffill', inplace=True)
