@@ -296,6 +296,58 @@ def streak_len(streak_list, lap_index = 1):
 streak_len( streak( ~colours_df['event'] ) )
 ```
 
+## Simple Race History Chart
+
+One of the ways we can use the atypical laptime indicator is to neutralise affected areas of the race history chart, making it (arguably), easier to read.
+
+For example, a raw race history chart, which shows how the lap times for each driver compare over the course of a race by comparison to the winner's mean laptime, might look like the following:
+
+```python
+#Get the number of the winning car
+#which is to say, the one in first position at the end of the race
+LAST_LAP = laptimes['LEAD_LAP_NUMBER'].max()
+
+winner = laptimes[(laptimes['LAP_NUMBER']==LAST_LAP) & 
+                  (laptimes['POS']==1)]['NUMBER'].iloc[0]
+winner
+```
+
+```python
+#Get the mean laptime for the winner
+winner_mean_laptime_s = laptimes[laptimes['NUMBER']==winner]['LAP_TIME_S'].mean().round(decimals=3)
+winner_mean_laptime_s
+```
+
+```python
+#Calculate the "race history" laptimes
+laptimes['RACE_HISTORY_LAP_TIME_S'] = (winner_mean_laptime_s * laptimes['LEAD_LAP_NUMBER']) - laptimes['ELAPSED_S']
+```
+
+```python
+#Lat's filter, for now, by just the top 10 cars
+top10 = laptimes[laptimes['LEAD_LAP_NUMBER']==LAST_LAP].sort_values(['LEAD_LAP_NUMBER', 'POS'])[['NUMBER']].reset_index(drop=True).head(10)
+top10.index +=1
+```
+
+```python
+sns.set(style="ticks")
+plt.style.use("dark_background")
+
+#Setting the palette size is a hack: https://github.com/mwaskom/seaborn/issues/1515#issuecomment-482189290
+data = laptimes[laptimes['NUMBER'].isin(top10['NUMBER'])]
+
+ax = sns.lineplot(x="LEAD_LAP_NUMBER", y="RACE_HISTORY_LAP_TIME_S",
+                  units = 'NUMBER', hue = 'NUMBER', palette=sns.color_palette("Set1", len(data['NUMBER'].unique())),
+                  estimator=None, lw=1,
+                  data=data)
+
+#Let's add in some indicators showing the atypical laps
+
+def atypical_lap_band(row, ax):
+    ax.axvspan(row['Start']-0.5, row['Stop']+0.5, alpha=0.5, color='lightyellow')
+    
+streak_len( streak( ~colours_df['event'] ) ).apply(lambda x: atypical_lap_band(x, ax), axis=1);
+```
 ```python
 
 ```
