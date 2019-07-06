@@ -413,9 +413,8 @@ LAST_LAP
 ```python
 #Find top 10 at end
 cols = ['NUMBER','TEAM', 'DRIVER_NAME', 'CLASS','LAP_NUMBER','ELAPSED']
-top10 = laptimes[laptimes['LEAD_LAP_NUMBER']==LAST_LAP].sort_values(['LEAD_LAP_NUMBER', 'POS'])[cols].head(10).reset_index(drop=True)
-top10.index += 1
-top10
+laptimes[laptimes['LEAD_LAP_NUMBER']==LAST_LAP].sort_values(['LEAD_LAP_NUMBER', 'POS'])[cols].head(10)
+
 ```
 
 ```python

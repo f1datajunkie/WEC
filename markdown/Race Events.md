@@ -121,9 +121,6 @@ import numpy as np
 from numpy import NaN
 
 laptimes['CLEAN_LAP_TIME_S'] = laptimes['LAP_TIME_S']
-
-#If the zscore on a laptime is greater than three, set the CLEAN_LAP_TIME_S value to NaN
-# else use the original value
 laptimes.loc[np.abs(stats.zscore(laptimes['LAP_TIME_S'])) > 3, 'CLEAN_LAP_TIME_S'] = NaN
 ```
 
@@ -193,8 +190,7 @@ laptimes_summary_stats['CLUSTER_GROUP'] = kmeans.labels_
 
 #colours = np.where(laptimes_summary_stats['CLUSTER_GROUP'], 'red', 'green')
 #laptimes_summary_stats.reset_index().plot(kind='scatter', x='LEAD_LAP_NUMBER', y='median', color=colours)
-ax = sns.scatterplot(x="LEAD_LAP_NUMBER", y="median", hue = 'CLUSTER_GROUP',
-                     data=laptimes_summary_stats.reset_index())
+ax = sns.scatterplot(x="LEAD_LAP_NUMBER", y="median", hue = 'CLUSTER_GROUP', data=laptimes_summary_stats.reset_index())
 
 ```
 
@@ -214,7 +210,7 @@ tmp.loc[tmp['INLAP'], 'CLEAN_LAP_TIME_S'] = NaN
 
 #Some cars may have multiple laptimes recorded on one lead lap
 #in this case, we need to reduce the multiple times to a single time, eg min, or mean
-car_by_lap = tmp.pivot_table(index='LEAD_LAP_NUMBER', columns='NUMBER', values='CLEAN_LAP_TIME_S', aggfunc='min')
+car_by_lap = tmp.pivot_table(index='LEAD_LAP_NUMBER',columns='NUMBER', values='CLEAN_LAP_TIME_S', aggfunc='min')
 car_by_lap.head()
 ```
 
@@ -236,7 +232,6 @@ Now let's highlight clustered laps and see if we've picked out the slow ones...
 laptimes_summary_stats['CLUSTER_GROUP'] = kmeans.labels_
 
 colours = np.where(laptimes_summary_stats['CLUSTER_GROUP'], 'red', 'green')
-
 #ax = sns.scatterplot(x="LEAD_LAP_NUMBER", y="median", hue = 'CLUSTER_GROUP' data=tips)
 laptimes_summary_stats.reset_index().plot(kind='scatter', x='LEAD_LAP_NUMBER', y='median', color=colours)
 ```
@@ -257,13 +252,10 @@ laptimes_summary_stats.reset_index().plot(kind='scatter', x='LEAD_LAP_NUMBER', y
 
 ### Streak Detection
 
-There are several receipes out there for streak detection. It may be useful to try to collect them and then come up with a best practice way of calculating streaks?
+There are several receipes out there for streak detection. It may be useful to try to collect them and then come up with a best practice way of calcualting streaks?
 
 ```python
 colours_df = pd.DataFrame({'event':[c!='red' for c in colours]})
-#Set the index to be lead lap number - indexed on 1 rather than 0
-colours_df.index += 1
-
 colours_df.head()
 ```
 
@@ -294,204 +286,6 @@ def streak_len(streak_list, lap_index = 1):
     return tmp_df
 
 streak_len( streak( ~colours_df['event'] ) )
-```
-
-## Simple Race History Chart
-
-One of the ways we can use the atypical laptime indicator is to neutralise affected areas of the race history chart, making it (arguably), easier to read.
-
-For example, a raw race history chart, which shows how the lap times for each driver compare over the course of a race by comparison to the winner's mean laptime, might look like the following:
-
-```python
-#Get the number of the winning car
-#which is to say, the one in first position at the end of the race
-LAST_LAP = laptimes['LEAD_LAP_NUMBER'].max()
-
-winner = laptimes[(laptimes['LAP_NUMBER']==LAST_LAP) & 
-                  (laptimes['POS']==1)]['NUMBER'].iloc[0]
-winner
-```
-
-```python
-#Get the mean laptime for the winner
-winner_mean_laptime_s = laptimes[laptimes['NUMBER']==winner]['LAP_TIME_S'].mean().round(decimals=3)
-winner_mean_laptime_s
-```
-
-```python
-#Calculate the "race history" laptimes
-laptimes['RACE_HISTORY_LAP_TIME_S'] = (winner_mean_laptime_s * laptimes['LEAD_LAP_NUMBER']) - laptimes['ELAPSED_S']
-```
-
-```python
-#Lat's filter, for now, by just the top 10 cars
-top10 = laptimes[laptimes['LEAD_LAP_NUMBER']==LAST_LAP].sort_values(['LEAD_LAP_NUMBER', 'POS'])[['NUMBER']].reset_index(drop=True).head(10)
-top10.index +=1
-```
-
-```python
-sns.set(style="ticks")
-plt.style.use("dark_background")
-
-#Setting the palette size is a hack: https://github.com/mwaskom/seaborn/issues/1515#issuecomment-482189290
-data = laptimes[laptimes['NUMBER'].isin(top10['NUMBER'])]
-
-ax = sns.lineplot(x="LEAD_LAP_NUMBER", y="RACE_HISTORY_LAP_TIME_S",
-                  units = 'NUMBER', hue = 'NUMBER', palette=sns.color_palette("Set1", len(data['NUMBER'].unique())),
-                  estimator=None, lw=1,
-                  data=data)
-
-#Let's add in some indicators showing the atypical laps
-
-def atypical_lap_band(row, ax):
-    ax.axvspan(row['Start']-0.5, row['Stop']+0.5, alpha=0.5, color='lightyellow')
-    
-streak_len( streak( ~colours_df['event'] ) ).apply(lambda x: atypical_lap_band(x, ax), axis=1);
-```
-
-Safety car periods result in an increase in typical laptimes which can dramatically affect the appearance of the chart.
-
-However, if we identify laps with atypical laptimes across the field, we can 'neutralise" those laps by replacing the recorded times with dummy laptimes.
-
-One model for generating dummy laptimes is to identify a "laptime corrective" in the form of a subtractive term:
-
-`corrective = leader_laptime_on_slow_lap - leader_mean_lap_time_across_none_slow_laps`
-
-and then subtract that corrective value from all cars during the slow laps.
-
-We can then further highlight the chart to identify the laps where we neutralalised the lap times. 
-
-```python
-winnerlaps = laptimes[laptimes['NUMBER']==winner].reset_index(drop=True)
-winnerlaps.index += 1
-
-#CLUSTER_GROUP 0 are the normal laps (We can't guarantee that? Need some sort of check)
-```
-
-<!-- #region -->
-A crude corrective is the simple mean laptime for the winner.
-
-We could also calculate the mean over just the "racing" laps, or just the atypical laps
-
-*CLUSTER_GROUP 0 are the normal laps, 1 the atypical laps (tho can't guarantee that coding? Need some sort of check?)*
-
-```python
-corrective = winnerlaps[laptimes_summary_stats['CLUSTER_GROUP']==0]['LAP_TIME_S'].mean().round(decimals=3)
-```
-
-Or we could set a corrective based on the winner's fastest lap:
-```python
-corrective = laptimes[laptimes['NUMBER']==winner]['LAP_TIME_S'].min()
-```
-
-If the corrective is a single, constant value, we can apply it simply. For example, if the lap is atypical, set the value to the corrective offset, else use the original lap time.
-
-```python
-laptimes['RACE_HISTORY_CORRECTIVE'] = 0
-
-#Apply the corrective to atypical lap laptimes
-laptimes.loc[laptimes['LEAD_LAP_NUMBER'].isin(NEUTRALISED_LAPS), 'RACE_HISTORY_CORRECTIVE'] = corrective
-```
-<!-- #endregion -->
-
-However, a more sensible corrective would be relative to the laptimes just before and just after the atypical laps, such as the mean time of the laps immediately before and after the atypical stint
-
-*Bounds get fiddly if atypical laps appear at a fence post (first lap, last lap), so for now let's use the fact the first lap is clear to set the neutralised lap time during an atypical stint to be the lap time of the leader on the lap before the atypical run.*
-
-```python
-#Get the lap numbers for the atypical laps (that is, the laps we want to neutralise)
-NEUTRALISED_LAPS = laptimes_summary_stats[laptimes_summary_stats['CLUSTER_GROUP']==1].index
-
-#Get the first lap in atypical run
-NEUTRALISED_LAP_STARTS = streak_len( streak( ~colours_df['event'] ) )['Start']
-
-#Note we may get a fence post error if lap 1 is to be neutralised
-NEUTRALISED_LAP_DATA = laptimes[(laptimes['POS']==1) & (laptimes['LEAD_LAP_NUMBER'].isin(NEUTRALISED_LAP_STARTS-1))][['LAP_NUMBER','LAP_TIME_S']].set_index('LAP_NUMBER')
-
-#Or should we use the fastest lap time on the lead lap?
-#NEUTRALISED_LAP_DATA = laptimes[laptimes['LAP_NUMBER'].isin(NEUTRALISED_LAP_STARTS-1)].groupby('LEAD_LAP_NUMBER')['LAP_TIME_S'].min()#.set_index('LAP_NUMBER')
-
-#Nudge the neutralised time from the lap prior to the atypical lap run start to the atypical lap run start
-NEUTRALISED_LAP_DATA.index += 1
-NEUTRALISED_LAP_DATA.rename(columns={"LAP_TIME_S": "NEUTRAL_LAP_TIME_S"}, inplace=True)
-
-NEUTRALISED_LAP_DATA
-```
-
-The corrective is now the difference between the lap leader's time during an atypical run and the neutralised lap target time.
-
-```python
-NEUTRALISED_LAP_DATA['ACTUAL'] = laptimes[(laptimes['POS']==1) & (laptimes['LAP_NUMBER'].isin(NEUTRALISED_LAP_STARTS))][['LAP_NUMBER','LAP_TIME_S']].set_index('LAP_NUMBER')
-NEUTRALISED_LAP_DATA
-
-```
-
-```python
-colours_df['desired'] = 0
-
-#Use a desired of 0 for typical laps, desired time (or NA) for atypical laps
-colours_df.loc[colours_df.index.isin(NEUTRALISED_LAPS), 'desired'] = NEUTRALISED_LAP_DATA['NEUTRAL_LAP_TIME_S']
-#Then fill the desired time down
-colours_df['desired'].fillna(method='ffill', inplace=True)
-
-##?? maybe we should just set the target time to the mean of the winner on just the typical laps?
-winners_mean_typical = laptimes[laptimes['NUMBER']==winner]['LAP_TIME_S'].mean().round(decimals=3)
-colours_df['desired'] = 0
-colours_df.loc[colours_df.index.isin(NEUTRALISED_LAPS), 'desired'] = winners_mean_typical
-colours_df['desired'].fillna(method='ffill', inplace=True)
-
-
-#The corrective basis is then the lap time of the lead lap leader
-colours_df['corrective_basis'] = laptimes[laptimes['POS']==1].set_index('LEAD_LAP_NUMBER')['LAP_TIME_S']
-
-colours_df['corrective'] = 0
-colours_df.loc[colours_df.index.isin(NEUTRALISED_LAPS), 'corrective'] = colours_df['corrective_basis'] - colours_df['desired']
-
-colours_df.head()
-```
-
-```python
-#We now need to apply the lap based correctives to each lap in the laptimes dataset
-laptimes = pd.merge(laptimes, colours_df['corrective'], left_on='LEAD_LAP_NUMBER', right_index=True)
-```
-
-```python
-#Repeat the race history calculations using the neutralised lap times
-laptimes['NEUTRALISED_LAP_TIME_S'] = laptimes['LAP_TIME_S'] - laptimes['corrective']
-laptimes['ELAPSED_NEUTRALISED_LAP_TIME_S'] = laptimes.groupby('NUMBER')['NEUTRALISED_LAP_TIME_S'].cumsum()
-```
-
-```python
-neutralised_winner_mean_laptime_s = laptimes[laptimes['NUMBER']==winner]['NEUTRALISED_LAP_TIME_S'].mean().round(decimals=3)
-neutralised_winner_mean_laptime_s
-
-```
-
-```python
-#Calculate the "neutralised race history" laptimes
-laptimes['NEUTRALISED_RACE_HISTORY_LAP_TIME_S'] = (neutralised_winner_mean_laptime_s * laptimes['LEAD_LAP_NUMBER']) - laptimes['ELAPSED_NEUTRALISED_LAP_TIME_S']
-
-```
-
-```python
-#Should make a function for this
-data = laptimes[laptimes['NUMBER'].isin(top10['NUMBER'])]
-
-ax = sns.lineplot(x="LEAD_LAP_NUMBER", y="NEUTRALISED_RACE_HISTORY_LAP_TIME_S",
-                  units = 'NUMBER', hue = 'NUMBER', palette=sns.color_palette("Set1", len(data['NUMBER'].unique())),
-                  estimator=None, lw=1,
-                  data=data)
-
-#Let's add in some indicators showing the atypical laps
-
-def atypical_lap_band(row, ax):
-    ax.axvspan(row['Start']-0.5, row['Stop']+0.5, alpha=0.5, color='lightyellow')
-    
-streak_len( streak( ~colours_df['event'] ) ).apply(lambda x: atypical_lap_band(x, ax), axis=1);
-```
-
-```python
-laptimes
 ```
 
 ```python
