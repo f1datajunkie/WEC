@@ -352,97 +352,82 @@ def atypical_lap_band(row, ax):
 streak_len( streak( ~colours_df['event'] ) ).apply(lambda x: atypical_lap_band(x, ax), axis=1);
 ```
 
-Safety car periods result in an increase in typical laptimes which can dramatically affect the appearance of the chart.
+One thing we notice about the race history chart is that safety car periods can result in an increase in typical laptimes which can dramatically affect the appearance of the chart.
 
 However, if we identify laps with atypical laptimes across the field, we can 'neutralise" those laps by replacing the recorded times with dummy laptimes.
 
 One model for generating dummy laptimes is to identify a "laptime corrective" in the form of a subtractive term:
 
-`corrective = leader_laptime_on_slow_lap - leader_mean_lap_time_across_none_slow_laps`
+`leader_neutralised_lap_time = leader_laptime_on_slow_lap - corrective`
 
-and then subtract that corrective value from all cars during the slow laps.
-
-We can then further highlight the chart to identify the laps where we neutralalised the lap times. 
-
-```python
-winnerlaps = laptimes[laptimes['NUMBER']==winner].reset_index(drop=True)
-winnerlaps.index += 1
-
-#CLUSTER_GROUP 0 are the normal laps (We can't guarantee that? Need some sort of check)
-```
+So what should that `leader_neutralised_lap_time` be?
 
 <!-- #region -->
-A crude corrective is the simple mean laptime for the winner.
+If we want to "neutralise" the safety car lap times, then we might expect the race history chart to show a flat line for the cars travelling at a neutralised pace.
 
-We could also calculate the mean over just the "racing" laps, or just the atypical laps
+The neutralised pace should thus be set to the winner's mean laptime over the non-neutralised laps (the neutralised laps should not otherwise change the mean laptime basis that defines the race history chart).
 
-*CLUSTER_GROUP 0 are the normal laps, 1 the atypical laps (tho can't guarantee that coding? Need some sort of check?)*
+But whose pace should we use for the basis of neutralisation?
 
-```python
-corrective = winnerlaps[laptimes_summary_stats['CLUSTER_GROUP']==0]['LAP_TIME_S'].mean().round(decimals=3)
-```
+Ideally, we want to use the pace that defines the pace of the field. If a safety car is controlling race pace, then it makes sense to use the laptime of the leader on a given lap as the race defining pace and define a corrective based on this pace.
 
-Or we could set a corrective based on the winner's fastest lap:
-```python
-corrective = laptimes[laptimes['NUMBER']==winner]['LAP_TIME_S'].min()
-```
-
-If the corrective is a single, constant value, we can apply it simply. For example, if the lap is atypical, set the value to the corrective offset, else use the original lap time.
+That is:
 
 ```python
-laptimes['RACE_HISTORY_CORRECTIVE'] = 0
+leaders_neutralised_lap_time = winners_non_neutralised_laps_mean_lap_time
 
-#Apply the corrective to atypical lap laptimes
-laptimes.loc[laptimes['LEAD_LAP_NUMBER'].isin(NEUTRALISED_LAPS), 'RACE_HISTORY_CORRECTIVE'] = corrective
 ```
-<!-- #endregion -->
 
-However, a more sensible corrective would be relative to the laptimes just before and just after the atypical laps, such as the mean time of the laps immediately before and after the atypical stint
+We can create a corrective for each laptime as follows:
+
+```python
+
+leaders_neutralised_lap_time = leaders_lap_time_on_neutralisation_lap - corrective_on_neutralisation_lap
+
+```
+
+which gives:
+
+```python
+corrective_on_neutralisation_lap = leaders_lap_time_on_neutralisation_lap - winners_non_neutralised_laps_mean_lap_time
+```
+
+and more generally:
+
+```python
+neutralised_lap_time = lap_time_on_neutralisation_lap - corrective_on_neutralisation_lap
+
+```
 
 *Bounds get fiddly if atypical laps appear at a fence post (first lap, last lap), so for now let's use the fact the first lap is clear to set the neutralised lap time during an atypical stint to be the lap time of the leader on the lap before the atypical run.*
+<!-- #endregion -->
+
+Let's start by getting hold of the lap numbers for the laps we want to neutralise, and the lap number of the laps at the start of neutralisation periods:
 
 ```python
 #Get the lap numbers for the atypical laps (that is, the laps we want to neutralise)
 NEUTRALISED_LAPS = laptimes_summary_stats[laptimes_summary_stats['CLUSTER_GROUP']==1].index
 
-#Get the first lap in atypical run
+#As a convenience, we may wish to get the first lap in a neutralisation period
 NEUTRALISED_LAP_STARTS = streak_len( streak( ~colours_df['event'] ) )['Start']
-
-#Note we may get a fence post error if lap 1 is to be neutralised
-NEUTRALISED_LAP_DATA = laptimes[(laptimes['POS']==1) & (laptimes['LEAD_LAP_NUMBER'].isin(NEUTRALISED_LAP_STARTS-1))][['LAP_NUMBER','LAP_TIME_S']].set_index('LAP_NUMBER')
-
-#Or should we use the fastest lap time on the lead lap?
-#NEUTRALISED_LAP_DATA = laptimes[laptimes['LAP_NUMBER'].isin(NEUTRALISED_LAP_STARTS-1)].groupby('LEAD_LAP_NUMBER')['LAP_TIME_S'].min()#.set_index('LAP_NUMBER')
-
-#Nudge the neutralised time from the lap prior to the atypical lap run start to the atypical lap run start
-NEUTRALISED_LAP_DATA.index += 1
-NEUTRALISED_LAP_DATA.rename(columns={"LAP_TIME_S": "NEUTRAL_LAP_TIME_S"}, inplace=True)
-
-NEUTRALISED_LAP_DATA
 ```
 
-The corrective is now the difference between the lap leader's time during an atypical run and the neutralised lap target time.
+The corrective is the difference between the lap leader's time during a neutralisation period and the neutralised lap target time.
+
+The neutralised lap target time is the winner's mean lap time over the non-neutralised laps.
 
 ```python
-NEUTRALISED_LAP_DATA['ACTUAL'] = laptimes[(laptimes['POS']==1) & (laptimes['LAP_NUMBER'].isin(NEUTRALISED_LAP_STARTS))][['LAP_NUMBER','LAP_TIME_S']].set_index('LAP_NUMBER')
-NEUTRALISED_LAP_DATA
-
-```
-
-```python
-colours_df['desired'] = 0
-
-#Use a desired of 0 for typical laps, desired time (or NA) for atypical laps
-colours_df.loc[colours_df.index.isin(NEUTRALISED_LAPS), 'desired'] = NEUTRALISED_LAP_DATA['NEUTRAL_LAP_TIME_S']
-#Then fill the desired time down
-colours_df['desired'].fillna(method='ffill', inplace=True)
-
-##?? maybe we should just set the target time to the mean of the winner on just the typical laps?
+##Set the target time to the mean of the winner on just the typical laps?
 winners_mean_typical = laptimes[(laptimes['NUMBER']==winner) & ~(laptimes['LEAD_LAP_NUMBER'].isin(NEUTRALISED_LAPS))]['LAP_TIME_S'].mean().round(decimals=3)
+winners_mean_typical
+```
+
+Set up a dummy column, `desired`, to be the lap time we want the leader to have on laps in the neutralisation period, then generate the corrective as the difference between their actual lap time and this desired lap time for the neutralisation laps. Set the dummy `desired` column to the dummy value 0 otherwise (that is, on racing laps).
+
+```python
 colours_df['desired'] = 0
 colours_df.loc[colours_df.index.isin(NEUTRALISED_LAPS), 'desired'] = winners_mean_typical
 colours_df['desired'].fillna(method='ffill', inplace=True)
-
 
 #The corrective basis is then the lap time of the lead lap leader
 colours_df['corrective_basis'] = laptimes[laptimes['POS']==1].set_index('LEAD_LAP_NUMBER')['LAP_TIME_S']
@@ -491,10 +476,6 @@ def atypical_lap_band(row, ax):
     ax.axvspan(row['Start']-0.5, row['Stop']+0.5, alpha=0.5, color='lightyellow')
     
 streak_len( streak( ~colours_df['event'] ) ).apply(lambda x: atypical_lap_band(x, ax), axis=1);
-```
-
-```python
-laptimes
 ```
 
 ```python
