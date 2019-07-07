@@ -1,4 +1,4 @@
-#This is a utility function that should really be:
+# This is a utility function that should really be:
 # - written properly
 # - documented
 # - tested
@@ -6,6 +6,7 @@
 # Or similar functions may exist in other packages, and I just haven't found them yet!
 
 from datetime import timedelta
+import pandas as pd
 
 def getTime(ts, ms=False, astime=False):
     ''' Decode a delta time string and return time as numeric or timedelta type'''
