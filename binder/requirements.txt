@@ -3,6 +3,11 @@ jupytext
 matplotlib
 pandas
 
+#plotly is a rich HTML5 charting library
+plotly
+#Cufflinks providings pandas bindings for pandas dataframes
+cufflinks
+
 #We need to enable the qgrid extension in postBuild in order to display it
 qgrid
 
@@ -11,3 +16,5 @@ seaborn
 statsmodels
 
 sklearn
+
+tqdm
