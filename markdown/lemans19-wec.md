@@ -424,6 +424,29 @@ We can plot static charts directly from a *pandas* dataframe using the `.plot()`
 ```python
 mean_over_20_best_laps.plot(kind='bar');
 ```
+
+However, we can also plot interactive HTML charts using the `plotly` charting package and its helper, the `cufflinks` package, which adds plotly charting support to *pandas* dataframes via the `iplot()` method.
+
+So let's import the `cufflinks` package and enable it for offline use:
+
+```python
+#!pip install plotly cufflinks
+#cufflinks provides plotly bindings for pandas
+import cufflinks
+cufflinks.go_offline(connected=False)
+```
+
+```python
+#We need to force the xaxis to be interpreted as a categorical value rather than an integer
+mean_over_20_best_laps.iplot( kind='bar',
+                              # The chart can be styled in many ways
+                              # For example, we can style the x-axis tick marks 
+                              layout ={'xaxis':dict(type='category',
+                                                    tickangle=45,
+                                                    tickfont=dict(family='Ariel',
+                                                                  color='blue',
+                                                                  size=9))}
+                            );
 ```
 
 ```python
