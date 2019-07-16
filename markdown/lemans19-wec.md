@@ -111,7 +111,7 @@ Now we can download the file:
 ```python
 import requests
 
-#Download file
+#Download file into memory
 r = requests.get(url)
 
 #And save it
@@ -154,19 +154,19 @@ When you do load in the data, there appears to be at least one column that is ju
 
 `pd.read_csv(url, sep=';').dropna(how='all', axis=1)`
 
-We could also add a further .dropna(how='all',axis=0) step to remove any and all completely blank rows:
+We could also add a further `.dropna(how='all',axis=0)` step to remove any and all completely blank rows:
 
 `pd.read_csv(url, sep=';').dropna(how='all', axis=1).dropna(how='all', axis=0)`
 
 One other thing to note: when we do download the data, we want to be able to refer to it somehow. We do this by assigning the loaded data to a variable called `laptimes` using the assignment operator `=`.
 
-Note that the equals sign on its own is *not* a way of testing if one thing equals another; instead, we can read it as *is assigned the value":
+Note that the equals sign on its own is *not* a way of testing if one thing equals another; instead, we can read it as *"is assigned the value"*:
 
 `variable = value`
 
 Which is to say: *the variable called `variable` is assigned the value of `value`*.
 
-We can preview the first few rows of the dataframe using the command `dataframe_variable.head()` or `dataframe_variable.head(N)` where `N` is an integer to display the top few rows. 
+We can preview the first few rows of the dataframe using the command `dataframe_variable.head()` or `dataframe_variable.head(N)` where `N` is an integer to display the top *N* rows. 
 
 *As well as `.head()` you can also `.tail()` to see rows from the bottom of the table.*
 
@@ -179,7 +179,7 @@ laptimes.columns
 ```
 
 <!-- #region -->
-Each column name is represented as a *text string*. All programming languages have a notion of different "types" of things, such as integers, floating point numbers (eg 12.345), booleans (`True` / `False`) and strings (sequences of alphanumeric and punctuation characters).
+Each column name is represented as a *text string*. All programming languages have a notion of different "types" of things, such as integers, floating point numbers (eg `12.345`), booleans (`True` / `False`) and strings (sequences of alphanumeric and punctuation characters).
 
 The strings are identified as strings because they appear in quotes. The `[` and `]` characters show that we actually have a *list* of comma separated strings:
 
@@ -482,9 +482,9 @@ laptimes[laptimes['NUMBER']=='51'].sort_values('LAP_TIME_S')['LAP_TIME_S'].nsmal
 laptimes.groupby('NUMBER')['LAP_TIME_S'].apply(fastest20pc).to_frame().loc['51']
 ```
 
-# Porsche Best
+# Porsche Best etc  - Sector times
 
-There are several columns I don't know how to decipher: eg *Porsche-best*; is this a 20 lap delta?
+
 
 ```python
 laptimes.columns
