@@ -257,6 +257,82 @@ We can test against multiple teams using the `.isin()` method that takes a *list
 IS_IN = laptimes['MANUFACTURER'].isin( ['Porsche', 'BMW'] )
 laptimes[IS_IN][['MANUFACTURER','TEAM']].drop_duplicates().sort_values(['MANUFACTURER', 'TEAM'])
 ```
+
+### Creating Simple End User Applications
+
+The Jupyter notebook environment plays nicely with `ipywidgets`, a package that defines a wide variety of widget types.
+
+If we define a function that allows us to display the teams associated with a particular manufacturer:
+
+```python
+def show_teams_by_manufacturer(manufacturer):
+    ''' Display teams by manufacturer. '''
+    IN_TEAM = (laptimes['MANUFACTURER'] == manufacturer)
+    #Dedupe
+    TEAMS = laptimes[IN_TEAM][['MANUFACTURER','TEAM']].drop_duplicates()
+    #Sort and reset index
+    TEAMS = TEAMS.sort_values(['MANUFACTURER', 'TEAM']).reset_index(drop=True)
+    return TEAMS
+```
+
+```python
+show_teams_by_manufacturer('Dallara')
+```
+
+We can now use a special construction known as a *decorator* to automatically create a widget powered display of teams by manufacturer:
+
+```python
+from ipywidgets import interact
+
+#Sorted list of manufacturers
+MANUFACTURERS = laptimes['MANUFACTURER'].sort_values().unique()
+
+#Automatically create a widget for the parameter passed into the function
+#Provide a default list of values for the widget to display
+@interact( manufacturer = MANUFACTURERS )
+def show_teams_by_manufacturer(manufacturer):
+    ''' Display teams by manufacturer. '''
+    IN_TEAM = (laptimes['MANUFACTURER'] == manufacturer)
+    #Dedupe
+    TEAMS = laptimes[IN_TEAM][['MANUFACTURER','TEAM']].drop_duplicates()
+    #Sort and reset index
+    TEAMS = TEAMS.sort_values(['MANUFACTURER', 'TEAM']).reset_index(drop=True)
+    return TEAMS
+```
+
+We can also create multiple widgets automatically, and make them sensitive to each other. For example, allow the user to select a manufactuter, display the teams associated with that manufacturer in another widget and then display the team members of the selected team:
+
+```python
+show_teams_by_manufacturer( manufacturers_widget.value)
+```
+
+```python
+from ipywidgets import Dropdown
+
+#Define a dropdown list widget that displays manufacturers
+manufacturers_widget = Dropdown(options = MANUFACTURERS, value='Porsche' )
+
+#Define a dropdown list widget that displays the teams associated with the selected manufacturer
+teams_widget = Dropdown(options = show_teams_by_manufacturer( manufacturers_widget.value )['TEAM'] )
+
+#Create a function that will find the teams associated with a manufacturer
+def update_teams(*args):
+    teams_widget.options = show_teams_by_manufacturer( manufacturers_widget.value )['TEAM']
+    
+#Put a watcher on the manufacturers widget - if its value changes, update the teams widget
+manufacturers_widget.observe(update_teams, 'value')
+
+#Define a function to show the drivers associated with a team selected per manufacturer
+#We could create the widget display using a decorator
+#@interact(manufacturer = manufacturers_widget, team = teams_widget )
+def show_drivers_by_team(manufacturer, team):
+    TEAM_DRIVERS = laptimes['TEAM'] == team
+    print( ', '.join(laptimes[TEAM_DRIVERS]['DRIVER_NAME'].sort_values().unique()) )
+
+#Alternatively, use the ipywidgets interact function as a function to define the display
+interact(show_drivers_by_team, manufacturer = manufacturers_widget, team = teams_widget );
+```
+
 ## Getting the Data Straight
 
 As well as the dirty little secrets of coding, there are also the dirty little secrets of data analysis and visualisation is that creating analyses and visualisations is often one of the quickest parts of the task, *if* the data is in the right form.
