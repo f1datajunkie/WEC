@@ -466,6 +466,7 @@ laptimes.groupby('NUMBER')['LAP_TIME_S'].apply(fastest20pc).to_frame().head()
 laptimes.groupby('NUMBER')['LAP_TIME_S'].min().sort_values().to_frame().head()
 ```
 
+<!-- #region -->
 ## Rising Average
 
 The *rising average* laptime chart shows how the average (mean) laptime for a car increases for increasing laptime.
