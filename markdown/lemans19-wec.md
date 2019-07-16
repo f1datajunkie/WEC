@@ -418,6 +418,12 @@ mean_over_20_best_laps = laptimes.groupby('NUMBER')['LAP_TIME_S'] \
 
 mean_over_20_best_laps.head(10)
 ```
+
+We can plot static charts directly from a *pandas* dataframe using the `.plot()` method. For example:
+
+```python
+mean_over_20_best_laps.plot(kind='bar');
+```
 ```
 
 ```python
