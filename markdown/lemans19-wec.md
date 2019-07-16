@@ -470,14 +470,16 @@ laptimes.groupby('NUMBER')['LAP_TIME_S'].min().sort_values().to_frame().head()
 
 The *rising average* laptime chart shows how the average (mean) laptime for a car increases for increasing laptime.
 
-To create the chart, we need to sort the laptimes to show, for each car, its laptimes in increasing laptime order.
+The chart essentially provides a graphical view over a dataset. To create the chart, we need to get the data into a shape that we can easily visualise.
 
-```python
-#!pip install plotly cufflinks
-#cufflinks provides plotly bindings for pandas
-import cufflinks
-cufflinks.go_offline(connected=False)
+For a chart that visualises rising mean laptimes versus ranked lap for a particular car, we need to do the following:
+
 ```
+for each car:
+  sort the laptimes by increasing laptime;
+  calculate the rising average: for the Nth ranked laptime for a car, find the mean laptime over the N fastest laps;
+```
+<!-- #endregion -->
 
 ```python
 LAST_LAP = laptimes['LAP_NUMBER'].max()
@@ -507,17 +509,47 @@ laptimes['CAR_LAP_RANKED_CUMAV'] = (laptimes['CAR_LAP_RANKED_CUMSUM'] / (laptime
 ```
 
 ```python
+#Define chart labels
+plot_title = 'Rising Average Laptimes by Car'
+xTitle = 'Ranked laptime per car'
+yTitle = 'Rising average laptime (s)'
+
 laptimes[laptimes['NUMBER'].isin(SELECTED)].pivot(index='CAR_LAP_RANK',
                                                          columns='NUMBER', 
-                                                         values='CAR_LAP_RANKED_CUMAV').iplot();
+                                                         values='CAR_LAP_RANKED_CUMAV').iplot(title=plot_title,
+                                                                                              xTitle = xTitle,
+                                                                                              yTitle = yTitle);
 ```
 
-It can often be instructive to construct a chart in this way, by clearly thinking through some baby steps that build up the data items that you want to plot.
-
-There is, however, often a quick way, using some of the tools that are provided as part of the *pandas* package. (Knowledge of the tools available within the package come with time, as does the expert knowledge that allows you to identify when a particular tool is the one that will help solve your current problem.)
-
 ```python
-laptimes[laptimes['NUMBER']=='8']['LAP_TIME_S'].sort_values().expanding(min_periods=1).mean().reset_index(drop=True).iplot();
+#Define chart labels
+car_number = '8'
+
+
+#@interact(manufacturer = manufacturers_widget, team = teams_widget )
+def show_drivers_by_team(manufacturer, team):
+    TEAM_DRIVERS = laptimes['TEAM'] == team
+    print( ', '.join(laptimes[TEAM_DRIVERS]['DRIVER_NAME'].sort_values().unique()) )
+
+@interact(manufacturer = manufacturers_widget, team = teams_widget )
+def rising_average_laptime(manufacturer, team):
+    ''' Plot the rising average laptime for a specified car number'''
+    #The following assignment is for a "formatted string" which takes the value of one or more variables
+    # in specified locations
+    
+    car_number = laptimes[laptimes['TEAM'] == team]['NUMBER'].iloc[0]
+    plot_title = f'Rising Average Laptimes — Car {car_number}, {team} ({manufacturer})'
+    xTitle = 'Ranked laptime'
+
+
+
+    laptimes[laptimes['NUMBER']==car_number]['LAP_TIME_S'].sort_values() \
+                                                          .expanding(min_periods=1) \
+                                                          .mean() \
+                                                          .reset_index(drop=True) \
+                                                          .iplot(title = plot_title, 
+                                                                 xTitle=xTitle, 
+                                                                 yTitle=yTitle);
 
 ```
 
