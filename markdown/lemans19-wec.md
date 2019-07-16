@@ -408,8 +408,16 @@ laptimes.head()
 ```
 
 ```python
-laptimes.groupby('NUMBER')['LAP_TIME_S'].nsmallest(20).groupby('NUMBER').mean().round(decimals=3).to_frame().head(10)
+mean_over_20_best_laps = laptimes.groupby('NUMBER')['LAP_TIME_S'] \
+                                 .nsmallest(20) \
+                                 .groupby('NUMBER') \
+                                 .mean() \
+                                 .round(decimals=3) \
+                                 .to_frame() \
+                                 .sort_values('LAP_TIME_S')
 
+mean_over_20_best_laps.head(10)
+```
 ```
 
 ```python
