@@ -236,6 +236,27 @@ To make the table easier to read, we can then sort the resulting table across on
 laptimes[['MANUFACTURER','TEAM']].drop_duplicates().sort_values(['MANUFACTURER', 'TEAM'])
 ```
 
+As well as filtering the table to only show specified *columns*, we can also filter the table to only display particular *rows*. One way of achieving this is to create a dummy column of boolean values that say, for each row, whether a particular condition is `True` of `False`. This dummy column can then be used to select just the rows for which the condition evaluates as `True`.
+
+For example, let's pull out values for a particular manufacturer. We test for equality using the `==` operator; for quality, we will bracket the quality test although we do not strictly need to: the `==` operator has precedence over the assignement operator (`=`).
+
+```python
+IS_PORSCHE = (laptimes['MANUFACTURER'] == 'Porsche')
+IS_PORSCHE.head()
+```
+
+We can now use this as a filter term:
+
+```python
+laptimes[IS_PORSCHE][['MANUFACTURER','TEAM']].drop_duplicates().sort_values(['MANUFACTURER', 'TEAM'])
+```
+
+We can test against multiple teams using the `.isin()` method that takes a *list* of teams as an argument:
+
+```python
+IS_IN = laptimes['MANUFACTURER'].isin( ['Porsche', 'BMW'] )
+laptimes[IS_IN][['MANUFACTURER','TEAM']].drop_duplicates().sort_values(['MANUFACTURER', 'TEAM'])
+```
 ## Getting the Data Straight
 
 As well as the dirty little secrets of coding, there are also the dirty little secrets of data analysis and visualisation is that creating analyses and visualisations is often one of the quickest parts of the task, *if* the data is in the right form.
