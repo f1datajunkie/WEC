@@ -5,7 +5,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.1'
-      jupytext_version: 1.1.7
+      jupytext_version: 1.2.1
   kernelspec:
     display_name: Python 3
     language: python
@@ -13,7 +13,13 @@ jupyter:
 ---
 
 <!-- #region -->
-# Simple Demo
+# Simple Demo - Reviewing WEC Laptime Data
+
+For many forms of motorsport, timing data in the form of laptime data is often made available at the end of the race. This data can be used by fans and sports data journalists alike, as well as teams and drivers, for getting a *post hoc* insight into what actuall went on in a race.
+
+*Live laptime data is also typically provided via live timing screens, from which data feeds may be available to teams, although not, typically, to the public. (Data from timing screens can still be scraped unofficially, though...) Having access to laptime history during a race can be useful for reviewing how a race is evolving, plotting strategy, and even predicting likely future race events, such as overtaking possibilities or pit stops due to degrading laptimes.*
+
+This notebook provides a basic demonstration of how to download and analyse [FIA World Endurance Championship (WEC) data from Al Kamel Systems](http://fiawec.alkamelsystems.com), getting a feel for what the data can tell us and how we might encourage it to reveal some of the stories it undoubtedly contains.
 
 Timing info available as PDF, eg [here](https://assets.lemans.org/explorer/pdf/courses/2019/24-heures-du-mans/classification/race/24-heures-du-mans-2019-classification-after-24h.pdf).
 
@@ -26,26 +32,51 @@ CSV data from Al Kamel using links of form:
 <!-- #endregion -->
 
 ```python
+#Enable inline plots
 %matplotlib inline
+
+# pandas is a python package for working with tabular datasets
 import pandas as pd
 ```
 
 ```python
 #Add the parent dir to the import path
 import sys
-sys.path.append("..")
+sys.path.append("../py")
 
-#Import contents of the utils.py package in the parent directory
-from py.utils import *
+#Import contents of the utils.py package in the ../py directory
+from utils import *
 ```
 
 ```python
+#Download URL for timing data in CSV format
 url = 'http://fiawec.alkamelsystems.com/Results/08_2018-2019/07_SPA%20FRANCORCHAMPS/267_FIA%20WEC/201905041330_Race/Hour%206/23_Analysis_Race_Hour%206.CSV'
 
 ```
 
+Download the data into a *pandas* dataframe and preview the first few rows:
+
 ```python
 laptimes = pd.read_csv(url, sep=';').dropna(how='all', axis=1)
+laptimes.head()
+```
+
+We can save the raw data to a local CSV file so we can access it locally at a future time:
+
+```python
+## TO DO - unescape the %20... 
+outfile_name = url.split('/')[-1])
+laptimes.to_csv('../data/{}'.format(outfile_name)
+```
+
+```python
+#Load data from local file
+#laptimes = pd.read_csv('23_Analysis_Race_Hour 6.csv', sep=';').dropna(how='all', axis=1)
+#laptimes.head()
+```
+
+```python
+#Clean the column names of any leading / trailing whitespace
 laptimes.columns = [c.strip() for c in laptimes.columns]
 
 #Tidy the data a little... car and driver number are not numbers
@@ -55,6 +86,7 @@ laptimes.head()
 ```
 
 ```python
+# Review the column headings
 laptimes.columns
 ```
 
@@ -74,41 +106,70 @@ laptimes['LAP_TIME_S'] = laptimes['LAP_TIME'].apply(getTime)
 laptimes[['LAP_TIME','LAP_TIME_S']].head()
 ```
 
+Let's start with a plot that allows us to select a particular car number and plot the laptimes associated with it:
+
 ```python
 from ipywidgets import interact
-
 
 @interact(number=laptimes['NUMBER'].unique().tolist(),)
 def plotLapByNumber(number):
     laptimes[laptimes['NUMBER']==number].plot(x='LAP_NUMBER',y='LAP_TIME_S')
 ```
 
+We can also highlight which laps were driven by which driver by splitting the data for a particular car out over several columns, one for each driver, and then potting each driver column using a separate colour.
+
+The table is reshaped using the *pandas* `pivot()` method, setting the lap number as the *index* of the pivoted dataframe and splitting the `LAP_TIME_S` *values* out over several new *columns* that identify each `DRIVER_NUMBER`:
+
+```python
+laptimes[laptimes['NUMBER']=='1'].pivot(index='LAP_NUMBER',
+                                        columns='DRIVER_NUMBER',
+                                        values='LAP_TIME_S').head()
+```
+
+The `.plot()` command will, by default, plot the values in each column of a dataframe as a separate line against the corresponding index values:
+
 ```python
 @interact(number=laptimes['NUMBER'].unique().tolist(),)
 def plotLapByNumberDriver(number):
-    # We can pivot long to wide on driver number, then plot all cols against the lapnumber index
-    laptimes[laptimes['NUMBER']==number].pivot(index='LAP_NUMBER',columns='DRIVER_NUMBER', values='LAP_TIME_S').plot()
+    # We can pivot long to wide on driver number,
+    # then plot all cols against the lapnumber index
+    laptimes[laptimes['NUMBER']==number].pivot(index='LAP_NUMBER',
+                                               columns='DRIVER_NUMBER',
+                                               values='LAP_TIME_S').plot()
 
 ```
+
+We can also add annotations to the chart. For example, we might want to identify laps on which the car pitted so that we can disambiguate slow laps caused by an on-track incident, for example, from laps where the driver went through the pit lane.
+
+*(Depending on the timing marker, lap times for laps where the car crossed the finish line in the pit may or may not include the pit stop time.)*
 
 ```python
 @interact(number=laptimes['NUMBER'].unique().tolist(),)
 def plotLapByNumberDriverWithPit(number):
-    # We can pivot long to wide on driver number, then plot all cols against the lapnumber index
+    # We can pivot long to wide on driver number,
+    # then plot all cols against the lapnumber index
     #Grap the matplotli axes so we can overplot onto them
-    ax = laptimes[laptimes['NUMBER']==number].pivot(index='LAP_NUMBER',columns='DRIVER_NUMBER', values='LAP_TIME_S').plot()
-    #Also add in pit laps
-    laptimes[(laptimes['NUMBER']==number) & (laptimes['CROSSING_FINISH_LINE_IN_PIT']=='B')].plot.scatter(x='LAP_NUMBER',y='LAP_TIME_S', ax=ax)
+    ax = laptimes[laptimes['NUMBER']==number].pivot(index='LAP_NUMBER',
+                                                    columns='DRIVER_NUMBER',
+                                                    values='LAP_TIME_S').plot()
+    # Also add in pit laps
+    # Filter rows that identify both the car
+    # and the laps on which the car crossed the finish line in the pit
+    inpitlaps = laptimes[(laptimes['NUMBER']==number) & (laptimes['CROSSING_FINISH_LINE_IN_PIT']=='B')]
+    # Plot a marker for each of those rows
+    inpitlaps.plot.scatter(x='LAP_NUMBER',y='LAP_TIME_S', ax=ax)
     
 ```
 
 ## Stint Detection
 
-Some simple heuristics for detecting stints:
+Looking at the chart of laptimes vs driver number, we see that each car is on track for several distinct contiguous lap periods, which we might describe as "stints".
 
-- car stint: between each pit stop;
-- driver session: session equates to continuous period in car;
-- driver stint: relative to pit stops; this may be renumbered for each session?
+We can identify several simple heuristics for identifying different sorts of stint:
+
+- *car stint*: laps covered between each pit stop;
+- *driver session*: session equates to continuous period in car;
+- *driver stint*: relative to pit stops; this may be renumbered for each session?
 
 ```python
 #Driver session
