@@ -31,6 +31,10 @@ CSV data from Al Kamel using links of form:
 *Links don't seem to appear on e.g. [classification data](http://fiawec.alkamelsystems.com/)? So where else might they be found?*
 <!-- #endregion -->
 
+## Setup
+
+Although Python code often "just runs", there are a couple of things we can do to help improve our workflow, such as configuring the notebook to work in a particular wat, loading in Pythin programming packages that we can call on, and putting resources into specific locations.
+
 ```python
 #Enable inline plots
 %matplotlib inline
@@ -40,7 +44,9 @@ import pandas as pd
 ```
 
 ```python
-#Add the parent dir to the import path
+# Add the parent dir to the import path
+# This lets us load files in from child directories of the parent directory
+# that this notebook is in.
 import sys
 sys.path.append("../py")
 
@@ -48,26 +54,58 @@ sys.path.append("../py")
 from utils import *
 ```
 
+## Downloading Data
+
+If we know the URL of an online hosted data file, we can download data directly from it.
+
+Let's create a variable, `url`, that takes the value of the URL for an Al Kamel Systems timing data CSV file:
+
 ```python
 #Download URL for timing data in CSV format
 url = 'http://fiawec.alkamelsystems.com/Results/08_2018-2019/07_SPA%20FRANCORCHAMPS/267_FIA%20WEC/201905041330_Race/Hour%206/23_Analysis_Race_Hour%206.CSV'
 
 ```
 
-Download the data into a *pandas* dataframe and preview the first few rows:
+Download the data into a *pandas* dataframe, dropping any empty columns (`.dropna(how='all', axis=1)`) and then previewing the first few rows (`.head()`):
 
 ```python
+# Create a pandas dataframe from data loaded in directly from a web address
+# dropping any empty columns before previwing the first few lines of the dataset
 laptimes = pd.read_csv(url, sep=';').dropna(how='all', axis=1)
 laptimes.head()
 ```
 
-We can save the raw data to a local CSV file so we can access it locally at a future time:
+We can save the raw data to a local CSV file so we can access it locally at a future time.
+
+For convenience, we can create the filename that we save the file as from the URL by splitting the URL string on each '/' and selecting the last element:
 
 ```python
-## TO DO - unescape the %20... 
-outfile_name = url.split('/')[-1])
+# The .split() operator returns a list
+# The [-1] indexer selects the last item in the list
+outfile_name = url.split('/')[-1]
+outfile_name
+```
+
+If we want to replace the `%20` encoded value for a *space* character with an *actual* space, we can "unquote" it:
+
+```python
+from urllib.parse import unquote
+
+outfile_name = unquote(outfile_name)
+outfile_name
+```
+
+Now let's save the data into the sibling directory `data` as a file with that filename:
+
+```python
+# The .. path says "use the parent directory
+# So ../data says: use the data directory in the parent directory
 laptimes.to_csv('../data/{}'.format(outfile_name)
 ```
+
+If we have saved the data into a file, we can also load the data back in to a data from the file rather than having to download it again from its online location.
+
+*Uncomment the following code to load the data back in from the local file.*
 
 ```python
 #Load data from local file
@@ -75,10 +113,22 @@ laptimes.to_csv('../data/{}'.format(outfile_name)
 #laptimes.head()
 ```
 
-```python
-#Clean the column names of any leading / trailing whitespace
-laptimes.columns = [c.strip() for c in laptimes.columns]
+It often makes sense to tidy a data set to make it more useable.
 
+For example we often find that column names may include leading or trailing whitespace in the original datafile, which can make them hard to refer to, so we can rename the columns with any such whitespace stripped out.
+
+```python
+# Clean the column names of any leading / trailing whitespace
+# The [X for Y in Z] construction is know as a "list comprehension"
+# It creates a list of values ("[]") 
+# by iterating through ("for Y in") another list of values ("Z")
+# and generates new list values, "X", from each original list value "Y"
+laptimes.columns = [c.strip() for c in laptimes.columns]
+```
+
+The car and driver numbers are represented in the dataframe as numerical `int`, which is to say, *integer*, values. However, it is safer to cast this `str`, or *string* values so we don't accidentally perform numerical calculations on them, such as adding them together or finding the "average" value of them...
+
+```python
 #Tidy the data a little... car and driver number are not numbers
 laptimes[['NUMBER','DRIVER_NUMBER']] = laptimes[['NUMBER','DRIVER_NUMBER']].astype(str)
 
@@ -97,16 +147,32 @@ laptimes['CAR_DRIVER'] = laptimes['NUMBER'] + '_' + laptimes['DRIVER_NUMBER']
 laptimes[['NUMBER','DRIVER_NUMBER','CAR_DRIVER']].head()
 ```
 
-## Quick demo chart
+## Quick demo laptime chart
 
-Some simple plots to show how we can use widgets etc.
+The *pandas* package provides a handy `.plot()` method that allows us to plot charts directly from a dataframe. For example, we might want to plot lap time against lap number for each car.
+
+In the original dataframe, lap times are given in the form `minute:second` (for example, `2:06.349`). To plot the laptimes, we need to convert this to a more convenient numeric form, such as the laptime given as a number of seconds.
+
+The `utils` module we loaded in earlier contains a `getTime()` function that can perform this conversion for us. We can use a dataframe `.apply()` method to to apply that function to each value in the original `LAP_TIME` column and assign it to a new `LAP_TIME_S` column, before previewing a selection of the data frame where we select out those two columns, `LAP_TIME` and `LAP_TIME_S`:
 
 ```python
 laptimes['LAP_TIME_S'] = laptimes['LAP_TIME'].apply(getTime)
 laptimes[['LAP_TIME','LAP_TIME_S']].head()
 ```
 
+As well as selecting out *columns* of a data frame, we can also select out rows. For example, we can select out the laptimes for car `1` using the following construction:
+
+```python
+laptimes[laptimes['NUMBER']=='1'].head()
+```
+
 Let's start with a plot that allows us to select a particular car number and plot the laptimes associated with it:
+
+```python
+laptimes[laptimes['NUMBER']=='1'].plot(x='LAP_NUMBER',y='LAP_TIME_S');
+```
+
+We can easily create a function for that decorated with the *ipywidgets* `interact` function to create a set of widget that allows us to select a particular car and plot the laptimes associated with it:
 
 ```python
 from ipywidgets import interact
@@ -141,11 +207,14 @@ def plotLapByNumberDriver(number):
 
 We can also add annotations to the chart. For example, we might want to identify laps on which the car pitted so that we can disambiguate slow laps caused by an on-track incident, for example, from laps where the driver went through the pit lane.
 
-*(Depending on the timing marker, lap times for laps where the car crossed the finish line in the pit may or may not include the pit stop time.)*
+By inspection of the original table, we note that there are two columns that provide relevant information: the `CROSSING_FINISH_LINE_IN_PIT` column takes the value 'B' for laps where the car crosses the finish line in the pit, a null value otherwise;  and the `PIT_TIME` column takes a value on laps where the car exits the pit lane at the start of a lap, null otherwise.
+
+*(In general, depending on the timing marker, lap times for laps where the car crossed the finish line in the pit may or may not include the pit stop time.)*
 
 ```python
-@interact(number=laptimes['NUMBER'].unique().tolist(),)
-def plotLapByNumberDriverWithPit(number):
+@interact(number=laptimes['NUMBER'].unique().tolist(),
+          pitentrylap=True)
+def plotLapByNumberDriverWithPit(number, pitentrylap):
     # We can pivot long to wide on driver number,
     # then plot all cols against the lapnumber index
     #Grap the matplotli axes so we can overplot onto them
@@ -155,10 +224,36 @@ def plotLapByNumberDriverWithPit(number):
     # Also add in pit laps
     # Filter rows that identify both the car
     # and the laps on which the car crossed the finish line in the pit
-    inpitlaps = laptimes[(laptimes['NUMBER']==number) & (laptimes['CROSSING_FINISH_LINE_IN_PIT']=='B')]
+    pitcondition = (laptimes['CROSSING_FINISH_LINE_IN_PIT']=='B') if pitentrylap \
+                    else ~(laptimes['PIT_TIME'].isnull())
+    inpitlaps = laptimes[(laptimes['NUMBER']==number) & (pitcondition) ]
     # Plot a marker for each of those rows
     inpitlaps.plot.scatter(x='LAP_NUMBER',y='LAP_TIME_S', ax=ax)
     
+```
+
+### Inlaps and Outlaps
+
+We can use the pit information to create a convenience column with Boolean values that indicate whether a lap was in in-lap or not (that is, whether lap was completed in the pit lane).
+
+We can also shift this column to create a column that contains an outlap flag. We can decide whether the set the initial (first lap) value to be an outlap (`True`) or not.
+
+*Alternatively, we could  set the outlap as laps where there is a non-null value for the pit stop time. This would have a `False` value for the first lap.*
+
+```python
+#Create a flag to identify when we enter the pit, aka an INLAP
+laptimes['INLAP'] = (laptimes['CROSSING_FINISH_LINE_IN_PIT'] == 'B')
+
+#Make no assumptions about table order - so sort by lap number
+laptimes = laptimes.sort_values(['NUMBER','LAP_NUMBER'])
+
+# Identify a new stint for each car by shifting the pitting / INLAP flag within car tables
+laptimes['OUTLAP'] = laptimes.groupby('NUMBER')['INLAP'].shift(fill_value=True)
+
+#Alternatively, we could define the outlap by laps where there is a non-null pit time
+#laptimes['OUTLAP'] = ~laptimes['PIT_TIME'].isnull()
+
+laptimes[['DRIVER_NUMBER', 'INLAP','OUTLAP']].head()
 ```
 
 ## Stint Detection
@@ -167,36 +262,53 @@ Looking at the chart of laptimes vs driver number, we see that each car is on tr
 
 We can identify several simple heuristics for identifying different sorts of stint:
 
-- *car stint*: laps covered between each pit stop;
-- *driver session*: session equates to continuous period in car;
-- *driver stint*: relative to pit stops; this may be renumbered for each session?
+- *driver session*: session equates to continuous period in car irrespective of whether or not the car pits;
+- *car stint*: laps covered between each pit event; note that in the case of a drive through penalty, this will be counted as a pit event becuase the car passed through the pits, even if the car did not stop; the same is true of stop and go penalties where the car does stop but no work may be carried out on it;
+- *driver stint*: relative to pit stops; that is, a driver stint is a period bewteen pit stops for a particular driver; this may be renumbered for each session?
+
+
+#### Driver Session
+
+
+We can identify laps where there was a driver change within a particular car by testing whether or not the driver is the same within a car across consecutive laps, setting an appropriate default value for the first lap of the race.
 
 ```python
-#Driver session
-
-#Create a flag to identify when we enter the pit, aka an INLAP
-laptimes['INLAP'] = laptimes['CROSSING_FINISH_LINE_IN_PIT'] == 'B'
-
-#Make no assumptions about table order - so sort by lap number
-laptimes = laptimes.sort_values(['NUMBER','LAP_NUMBER'])
-
-# Identify a new stint for each car by sifting the pitting / INLAP flag within car tables
-laptimes['OUTLAP'] = laptimes.groupby('NUMBER')['INLAP'].shift(fill_value=True)
-
-laptimes[['DRIVER_NUMBER', 'INLAP','OUTLAP']].head()
-```
-
-```python
-#This is a count of the number of times a driver is in a vehicle after a pit who wasn't in it before
 #Also set overall lap = 1 to be a driver change
 laptimes['driverchange'] = (~laptimes['DRIVER_NUMBER'].eq(laptimes['DRIVER_NUMBER'].shift())) | (laptimes['LAP_NUMBER']==1)
+```
 
+A driver session is then a count for each driver of the number driver change laps they have been associated with. The *pandas* `cumsum()` method provides a *cumulative sum* operator that can be applied to the values of a column. When the column is typed as a set of Boolean values, `True` values count `1` and `False` values count `0`: 
+
+```python
+pd.DataFrame({'booleans':[False, True, False, False, True, False]}).cumsum()
+```
+
+If we group the rows in the dataframe by driver — that is, generating separate groups of rows that contain the laptimes associated with a single driver — and then apply a `cumsum()` over the `driverchange` column within each group, we get a a numeric count of the number of sessions each driver has had.
+
+
+The *pandas* `groupby()` method can be used to access groups of rows based on one or more column values. For example, we can group rows by the car and driver and then pull out just the rows associated with one group using the `get_group()` method:
+
+```python
+car_num = '1'
+driver_num = '1'
+
+laptimes.groupby(['NUMBER', 'DRIVER_NUMBER']).get_group( (car_num, driver_num) ).head()
+```
+
+When applying the `cumsum()` operator to a `groupby()` object, it will be automatically applied to the set of rows associated with each separate group:
+
+```python
 laptimes['DRIVER_SESSION'] = laptimes.groupby(['NUMBER', 'DRIVER_NUMBER'])['driverchange'].cumsum().astype(int)
+
+#Preview
 laptimes[['DRIVER_NUMBER', 'driverchange','DRIVER_SESSION','LAP_NUMBER']][42:48]
 ```
 
+#### Car Stint
+
+If we define a *car stint* as a period in between pit events, irrespective of driver, we can calculate it by simply by counting the number of pit event flags associated with the car.
+
 ```python
-# Car stint
 #Create a counter for each pit stop - the pit flag is entering pit at end of stint
 #  so a new stint applies on the lap after a pit
 #Find the car stint based on count of pit stops
@@ -204,6 +316,8 @@ laptimes['CAR_STINT'] = laptimes.groupby('NUMBER')['OUTLAP'].cumsum().astype(int
 
 laptimes[['CROSSING_FINISH_LINE_IN_PIT', 'INLAP', 'OUTLAP', 'CAR_STINT']].head()
 ```
+
+#### Driver Stint
 
 ```python
 #Driver stint - a cumulative count for each driver of their stints
@@ -243,7 +357,7 @@ laptimes['LAPS_DRIVER_STINT'] = laptimes.groupby(['CAR_DRIVER','DRIVER_STINT']).
 laptimes[['LAPS_CAR_STINT', 'LAPS_DRIVER', 'LAPS_DRIVER_SESSION', 'LAPS_DRIVER_STINT']].tail()
 ```
 
-## Basic Individal Driver Reports
+## Basic Individual Driver Reports
 
 Using those additional columns, we should be able to start creating reports by driver by facetting on individual drivers.
 
@@ -359,7 +473,7 @@ interact(laptime_charts, car=cars, driver=drivers, driversession=driversessions,
 
 ## Simple Model
 
-An example of creating a simple model using some explcitly pulled out data.
+An example of creating a simple model using some explicitly pulled out data.
 
 ```python
 def sample_laptimes(df, driver,driversession,driversessionstint=None, inlap=False, outlap=False):
@@ -433,7 +547,7 @@ fig = sm.graphics.plot_fit(model, 0, ax=ax)
 
 Some simple demonstrations of calculating position data.
 
-Naively, calculate position based on lap number and accumulated time (there may be complications based on whether the lead car records a laptine from pit entry...).
+Naively, calculate position based on lap number and accumulated time (there may be complications based on whether the lead car records a laptime from pit entry...).
 
 ```python
 #Find accumulated time in seconds
