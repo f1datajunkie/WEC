@@ -12,7 +12,7 @@ jupyter:
     name: python3
 ---
 
-# Pace Tables
+# Pace Tables & Charts
 
 The race history chart provides a useful way of reviewing the evolution of a race, but sometimes it can be hard to read off how much faster or slower one car is than another at any particular point in a race.
 
@@ -226,19 +226,28 @@ leadlaptimes_last_wide =  leadlaptimes_last.pivot(index='NUMBER',
 leadlaptimes_last_wide.head()
 ```
 
+#This chart loses information where there is more one lap per lead lap
+leadlap_last_pace = (leadlaptimes_last_wide - leadlaptimes_last_wide.loc[rebase])
+
+ax = leadlap_last_pace.loc[['8','3','11']].T.cumsum().plot();
+inpitlaps.plot.scatter(x='LEAD_LAP_NUMBER',y='y', ax=ax);
 Alternatively, where a car records more than one laptime on a given lead lap, we might choose to set the corresponding laptime to the sum of the laptimes recorded on the lead lap. This approach is more likely to be useful if we are running accumulated laptime time calculations becuase there is no loss off laptime information:
 
 ```python
-leadlaptimes_sum = laptimes.groupby(['NUMBER','LEAD_LAP_NUMBER'])['LAP_TIME_S'].sum().reset_index().pivot(index='NUMBER',
+leadlaptimes_sum_wide = laptimes.groupby(['NUMBER','LEAD_LAP_NUMBER'])['LAP_TIME_S'].sum().reset_index().pivot(index='NUMBER',
                                 columns='LEAD_LAP_NUMBER',
                                 values='LAP_TIME_S')
-leadlaptimes_sum.head()
+leadlaptimes_sum_wide.head()
 
+leadlap_sum_pace = (leadlaptimes_sum_wide - leadlaptimes_sum_wide.loc[rebase])
+
+ax = leadlap_sum_pace.loc[['8','3','11']].T.cumsum().plot();
+inpitlaps.plot.scatter(x='LEAD_LAP_NUMBER',y='y', ax=ax);
 ```
 
 ### Generating a pit time neutralistion mask
 
-One thing we notice is that the pace table and charts are cluttered by the inlap and outlap times...
+One thing we notice is that the pace table and charts are cluttered by the inlap and outlap times, particularly when running calculations against the lead lap.
 
 It may be better to try to neutralise those (for each car including the rebased car )and deal with a pit analysis more specifically elsewhere, such as by comparing inlaps and outlap times,and perhaps also making comparisons relative to flying lap just before the inlap and just after the outlap.
 
@@ -250,7 +259,8 @@ This means we can find the delta times on each lap and then neutralise the ones 
 
 The resulting "masked" delta times table will not give a true summary of all the delta times, and the accumulated delta time will be incorrect, but we will get a cleaner view of the pace in the intervening periods.
 
-```python
+Let's start by neutralising inlap and outlap times in the context of `LAP_NUMBER` calculations. (We will concern ourselves with neutralisation over lead lap calculations later.)
+
 #laptimes.pivot(index='NUMBER',columns='LAP_NUMBER', values='PIT_TIME_S')
 laptimes['INLAP'] = (laptimes['CROSSING_FINISH_LINE_IN_PIT'] == 'B')
 laptimes['OUTLAP'] = ~laptimes['PIT_TIME'].isnull()
@@ -258,7 +268,8 @@ laptimes['OUTLAP'] = ~laptimes['PIT_TIME'].isnull()
 laptimes['PITMASK'] = laptimes['INLAP'] | laptimes['OUTLAP']
 
 #Go defensive making sure we have no NA values
-pitmask = laptimes.pivot(index='NUMBER', columns='LAP_NUMBER', values='PITMASK').fillna(False)
+pitmask = laptimes.pivot(index='NUMBER', columns='LAP_NUMBER',
+                         values='PITMASK').fillna(False)
 pitmask.head()
 ```
 
@@ -295,8 +306,27 @@ ax = masked_pace.T[['8','3','11']].cumsum().plot();
 inpitlaps.plot.scatter(x='LAP_NUMBER',y='y', ax=ax);
 ```
 
+Visual inspection of that charts suggests certain trends... so could we use the corresponding neutralised data points for the basis of linear pace models, perhaps over various sliding windows?
+
+<!-- #region {"hideCode": false, "hidePrompt": false} -->
+Also, what do we need to do to neutralise inlap and outlap times when working with *leadlap* calculations?
+<!-- #endregion -->
+
 ```python
-laptimes.groupby('NUMBER')['PIT_TIME_S'].sum()[['8','3','11']]
+# what are the issues here? Do we simply use the LEAD_LAP_NUMBER rather than LAP_NUMBER?
+#If there are duplicate rows, we want to null everything we can?
+# Or will the masks handle everything anyway...?
+pitmask2 = laptimes.drop_duplicates(subset=['NUMBER', 'LEAD_LAP_NUMBER'],
+                                        keep='last').pivot(index='NUMBER',
+                                                           columns='LEAD_LAP_NUMBER',
+                                                           values='PITMASK').fillna(False)
+
+masked_leadlap_pace = leadlap_last_pace.mask(pitmask2, NaN)
+#We also need to and each row with the inlaps and outlaps for the rebased row
+#pitmask.loc[rebase].T gives the mask for the rebase row
+masked_leadlap_pace = masked_leadlap_pace.mul(pitmask2.loc[rebase].map({True:NaN,False:1}), axis=1 )
+masked_leadlap_pace.T[['8','3','11']].cumsum().plot();
+
 ```
 
 ### Rebasing According to Other Bases
