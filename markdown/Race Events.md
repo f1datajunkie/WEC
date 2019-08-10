@@ -3,7 +3,7 @@
 Simple attempts at identifying race related events.
 
 ```python
-#using notebook rather than inline enables 3D matplotlib plots
+# using notebook rather than inline enables 3D matplotlib plots
 %matplotlib inline
 
 import pandas as pd
@@ -18,7 +18,7 @@ url = 'http://fiawec.alkamelsystems.com/Results/08_2018-2019/07_SPA%20FRANCORCHA
 laptimes = pd.read_csv(url, sep=';').dropna(how='all', axis=1)
 laptimes.columns = [c.strip() for c in laptimes.columns]
 
-#Tidy the data a little... car and driver number are not numbers
+# Tidy the data a little... car and driver number are not numbers
 laptimes[['NUMBER','DRIVER_NUMBER']] = laptimes[['NUMBER','DRIVER_NUMBER']].astype(str)
 ```
 
@@ -28,27 +28,30 @@ Really need to move the df enrichment into a utils fn before the tech debt gets 
 
 
 ```python
-#Add the parent dir to the import path
+# Add the parent dir to the import path
 import sys
-sys.path.append("..")
+sys.path.append("../py")
 
-#Import contents of the utils.py package in the parent directory
-from py.utils import *
+# Import contents of the utils.py package in the parent directory
+from utils import *
 
-#Get laptimes in seconds
+# Get laptimes in seconds
 laptimes['LAP_TIME_S'] = laptimes['LAP_TIME'].apply(getTime)
 
-#Find accumulated time in seconds
+# Find accumulated time in seconds
 laptimes['ELAPSED_S']=laptimes['ELAPSED'].apply(getTime)
 
-#Find position based on accumulated laptime
+# Find pit time in seconds
+laptimes['PIT_TIME_S']=laptimes['PIT_TIME'].apply(getTime)
+
+# Find position based on accumulated laptime
 laptimes = laptimes.sort_values('ELAPSED_S')
 laptimes['POS'] = laptimes.groupby('LAP_NUMBER')['ELAPSED_S'].rank()
 
-#Find leader naively
+# Find leader naively
 laptimes['leader'] = laptimes['POS']==1
 
-#Find lead lap number
+# Find lead lap number
 laptimes['LEAD_LAP_NUMBER'] = laptimes['leader'].cumsum()
 
 laptimes.head()
@@ -126,7 +129,7 @@ import numpy as np
 laptimes[(np.abs(stats.zscore(laptimes['LAP_TIME_S'])) > 3)]
 ```
 
-We don't really want `NaN` values in the laptimes, but for now lets create a set of "clean" laptimes that do `NaN` the outliers.
+We don't really want `NaN` values in the laptimes, but for now let's create a set of "clean" laptimes that set the outliers to a `NaN` value.
 
 ```python
 from numpy import NaN
@@ -181,6 +184,14 @@ laptimes.groupby('LEAD_LAP_NUMBER')['INLAP'].apply(lambda x: x.sum()).plot(kind=
 ```python
 ax = sns.boxplot(x="LEAD_LAP_NUMBER", y="LAP_TIME_S", data=laptimes[laptimes['LAP_TIME_S']<500])
 laptimes.groupby('LEAD_LAP_NUMBER')['INLAP'].apply(lambda x: x.sum()).plot(kind='bar', ax=ax);
+```
+
+### Slow Laps from Top Speed
+
+If we have a full lap yellow or safety car, this should be reflected in the top speed recorded for the lap.
+
+```python
+laptimes[laptimes['NUMBER']=='1'].plot(x='LAP_NUMBER',y='TOP_SPEED');
 ```
 
 ## Simple Classifier
@@ -293,6 +304,10 @@ def streak(dfc):
             .tolist())
 
 streak(colours_df['event']), streak(~colours_df['event'])
+```
+
+```python
+## Better streak / stint code in Le Mans notebook.
 ```
 
 ```python
@@ -515,6 +530,17 @@ top10
 ```python
 laptimes[(laptimes['NUMBER']=='31') & (laptimes['LAP_NUMBER']>70)& (laptimes['LAP_NUMBER']<90) ][['LAP_NUMBER','LEAD_LAP_NUMBER']]
 ```
+### Rebased Race History Charts
+
+Race history charts are typically calculated relative to the race winner (or for a live race history chart, the race leader). However, we can also rebase race history charts to other cars, although this may make the chart harder to interpret. For example, we could rebase the times to:
+
+- a particular car;
+- the class leader;
+- the car with the lowest lap time on each lead lap.
+
+
+
+
 
 ```python
 

@@ -70,8 +70,9 @@ Download the data into a *pandas* dataframe, dropping any empty columns (`.dropn
 
 ```python
 # Create a pandas dataframe from data loaded in directly from a web address
-# dropping any empty columns before previwing the first few lines of the dataset
+# dropping any empty columns...
 laptimes = pd.read_csv(url, sep=';').dropna(how='all', axis=1)
+# ...and then previewing the first few lines of the dataset
 laptimes.head()
 ```
 
@@ -140,7 +141,7 @@ laptimes.head()
 laptimes.columns
 ```
 
-The `DRIVER_NUMBER` is relative to a car. It may be useful to also have a unique driver number, `CAR_DRIVER`:
+The `DRIVER_NUMBER` is relative to a car. It may be convenient to also have a unique driver number, `CAR_DRIVER`, which we can construct from the `NUMBER` and `DRIVER_NUMER` columns:
 
 ```python
 laptimes['CAR_DRIVER'] = laptimes['NUMBER'] + '_' + laptimes['DRIVER_NUMBER']
