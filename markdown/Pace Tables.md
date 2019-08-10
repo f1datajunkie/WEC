@@ -62,6 +62,10 @@ laptimes['LAP_TIME_S'] = laptimes['LAP_TIME'].apply(getTime)
 laptimes['ELAPSED_S']=laptimes['ELAPSED'].apply(getTime)
 laptimes['PIT_TIME_S']=laptimes['PIT_TIME'].apply(getTime)
 
+laptimes['S1_S']=laptimes['S1'].apply(getTime)
+laptimes['S2_S']=laptimes['S2'].apply(getTime)
+laptimes['S3_S']=laptimes['S3'].apply(getTime)
+
 # Find position based on accumulated laptime
 laptimes = laptimes.sort_values('ELAPSED_S')
 laptimes['POS'] = laptimes.groupby('LAP_NUMBER')['ELAPSED_S'].rank()
@@ -119,7 +123,7 @@ And then plot those:
 ax = pace.loc[['8','3','11']].T.cumsum().plot();
 
 #Need to overplot each with pit events
-inpitlaps = laptimes[(laptimes['NUMBER']==rebase) & ~(laptimes['PIT_TIME'].isnull())]
+inpitlaps = laptimes[(laptimes['NUMBER']==rebase) & ~(laptimes['PIT_TIME'].isnull())][:]
 inpitlaps.loc[:,'y']=0
 inpitlaps.plot.scatter(x='LAP_NUMBER',y='y', ax=ax);
 ```
@@ -281,7 +285,7 @@ pit_data.head()
 As a basis for comparison, let's see what the sector times were for the fastest 5 laps of the race:
 
 ```python
-pit_sector_cols = ['NUMBER','S1','S2','S3','PIT_TIME_S','LAP_TIME_S', 'LAP_NUMBER']
+pit_sector_cols = ['NUMBER','S1_S','S2_S','S3_S','PIT_TIME_S','LAP_TIME_S', 'LAP_NUMBER']
 
 laptimes.sort_values('LAP_TIME_S').head()[pit_sector_cols]
 ```
@@ -295,7 +299,22 @@ pit_data[pit_data['NUMBER'].isin(['8'])][pit_sector_cols].sort_values(['NUMBER',
 ```
 
 ```python
-pit_data[['LAP_TYPE','S1','S2','S3']].melt(id_vars='LAP_TYPE').head()
+# remove outlier sector times
+from scipy import stats
+import numpy as np
+
+#Need a more aggressive cut-off...
+pit_data.loc[np.abs(stats.zscore(pit_data['S1_S'])) > 3, 'S1_S'] = NaN
+pit_data.loc[np.abs(stats.zscore(pit_data['S2_S'])) > 3, 'S2_S'] = NaN
+pit_data.loc[np.abs(stats.zscore(pit_data['S3_S'])) > 3, 'S3_S'] = NaN
+```
+
+```python
+pit_data.boxplot(column=['S1_S', 'S2_S', 'S2_S']);
+```
+
+```python
+pit_data[['LAP_TYPE','S1_S','S2_S','S3_S']].melt(id_vars='LAP_TYPE').head()
 ```
 
 How does the distribution of times on the inlap compare with the fastest lap sector times?
@@ -304,7 +323,7 @@ We might expect at least the third sector time to show an elevated time due to p
 
 ```python
 import plotly.express as px
-fig = px.box(pit_data[pit_data['LAP_TYPE']=='INLAP'][['LAP_TYPE','S1','S2','S3']].melt(id_vars='LAP_TYPE'),
+fig = px.box(pit_data[pit_data['LAP_TYPE']=='INLAP'][['LAP_TYPE','S1_S','S2_S','S3_S']].melt(id_vars='LAP_TYPE'),
              x="variable", y="value")
 fig.show()
 ```
@@ -315,7 +334,7 @@ How about the distribution on the outlap? We'd expect at least the first sector 
 - it make take time for the tyres to get up to speed.
 
 ```python
-fig = px.box(pit_data[pit_data['LAP_TYPE']=='OUTLAP'][['LAP_TYPE','S1','S2','S3']].melt(id_vars='LAP_TYPE'),
+fig = px.box(pit_data[pit_data['LAP_TYPE']=='OUTLAP'][['LAP_TYPE','S1_S','S2_S','S3_S']].melt(id_vars='LAP_TYPE'),
              x="variable", y="value")
 fig.show()
 ```
@@ -323,7 +342,7 @@ fig.show()
 For comparison, what are the sector time distributions for the 50 fastest laps, bearing in mind that the pit event distributions are from all cars and the 50 fastest lap distributions are likely from a more limited range of cars?
 
 ```python
-fig = px.box(laptimes.sort_values('LAP_TIME_S').head(50)[['S1','S2','S3']].melt(),
+fig = px.box(laptimes.sort_values('LAP_TIME_S').head(50)[['S1_S','S2_S','S3_S']].melt(),
              x="variable", y="value")
 fig.show()
 ```
