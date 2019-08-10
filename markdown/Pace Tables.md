@@ -299,6 +299,32 @@ inpitlaps.plot.scatter(x='LAP_NUMBER',y='y', ax=ax);
 laptimes.groupby('NUMBER')['PIT_TIME_S'].sum()[['8','3','11']]
 ```
 
+### Rebasing According to Other Bases
+
+As well as rebasing to a particular driver, we can rebase to the fastest time recorded for each lap:
+
+```python
+laptimes_wide.loc[rebase].head()
+```
+
+```python
+.head()
+```
+
+```python
+pace_fastest = (laptimes_wide - laptimes_wide.min())
+pace_fastest.head()
+```
+
+Slightly more involved is to rebase relative to the car in first position (or indeed, any specified position) at the end of each lap:
+
+```python
+pos = 1 
+pace_pos1 = (laptimes_wide - laptimes[laptimes['POS']==pos].set_index('LAP_NUMBER')['LAP_TIME_S'])
+pace_pos1.head()
+
+```
+
 ## Neutralising Accumulated Pit Times
 
 The gaps in the pit stop neutralised pace charts represent a loss of information.
