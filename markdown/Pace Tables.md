@@ -226,11 +226,14 @@ leadlaptimes_last_wide =  leadlaptimes_last.pivot(index='NUMBER',
 leadlaptimes_last_wide.head()
 ```
 
+```python
 #This chart loses information where there is more one lap per lead lap
 leadlap_last_pace = (leadlaptimes_last_wide - leadlaptimes_last_wide.loc[rebase])
 
 ax = leadlap_last_pace.loc[['8','3','11']].T.cumsum().plot();
 inpitlaps.plot.scatter(x='LEAD_LAP_NUMBER',y='y', ax=ax);
+```
+
 Alternatively, where a car records more than one laptime on a given lead lap, we might choose to set the corresponding laptime to the sum of the laptimes recorded on the lead lap. This approach is more likely to be useful if we are running accumulated laptime time calculations becuase there is no loss off laptime information:
 
 ```python
@@ -260,7 +263,7 @@ This means we can find the delta times on each lap and then neutralise the ones 
 The resulting "masked" delta times table will not give a true summary of all the delta times, and the accumulated delta time will be incorrect, but we will get a cleaner view of the pace in the intervening periods.
 
 Let's start by neutralising inlap and outlap times in the context of `LAP_NUMBER` calculations. (We will concern ourselves with neutralisation over lead lap calculations later.)
-
+```python
 #laptimes.pivot(index='NUMBER',columns='LAP_NUMBER', values='PIT_TIME_S')
 laptimes['INLAP'] = (laptimes['CROSSING_FINISH_LINE_IN_PIT'] == 'B')
 laptimes['OUTLAP'] = ~laptimes['PIT_TIME'].isnull()
@@ -272,7 +275,6 @@ pitmask = laptimes.pivot(index='NUMBER', columns='LAP_NUMBER',
                          values='PITMASK').fillna(False)
 pitmask.head()
 ```
-
 ```python
 #Mask the times for each car's inlaps and outlaps
 masked_pace = pace.mask(pitmask, 0)
@@ -332,14 +334,6 @@ masked_leadlap_pace.T[['8','3','11']].cumsum().plot();
 ### Rebasing According to Other Bases
 
 As well as rebasing to a particular driver, we can rebase to the fastest time recorded for each lap:
-
-```python
-laptimes_wide.loc[rebase].head()
-```
-
-```python
-.head()
-```
 
 ```python
 pace_fastest = (laptimes_wide - laptimes_wide.min())
