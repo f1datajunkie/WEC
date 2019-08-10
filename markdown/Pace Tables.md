@@ -14,9 +14,9 @@ jupyter:
 
 # Pace Tables
 
-The race history chart provides a useful way of reviewing the evolution of a race, but some times it an be hard to read off how much faster or slower one car is than another at any particular point in a race.
+The race history chart provides a useful way of reviewing the evolution of a race, but sometimes it can be hard to read off how much faster or slower one car is than another at any particular point in a race.
 
-*Pace tables* and *pace charts* are an attempt to try to highlight pace differences for drivers on each lap (as given by lead lap) of the race.
+*Pace tables* and *pace charts* are an attempt to try to highlight pace differences for drivers on each lap of the race.
 
 
 ## Pace Tables
@@ -75,13 +75,15 @@ laptimes['LEAD_LAP_NUMBER'] = laptimes['leader'].cumsum()
 laptimes.head()
 ```
 
-Lap time deltas can be calculated for each lap as follows:
+Lap time deltas can be calculated for each lap as follows, rebasing the deltas relative to the laptimes for a particular car as given by the `rebase` car number:
 
 ```python
 laptimes_wide = laptimes.pivot(index='NUMBER',
                                 columns='LAP_NUMBER',
                                 values='LAP_TIME_S')
-rebase = "8"
+
+rebase = "8" # Find lap time deltas to the corresponding lap time for this car
+
 pace = (laptimes_wide - laptimes_wide.loc[rebase])
 pace.head()
 ```
@@ -89,10 +91,15 @@ pace.head()
 We can style the table to show how much time the rebased car made or lost on each lap compared to other cars.
 
 ```python
+#In a live notebook, this produces a styled bar chart within each cell
 pace.T[['3','11']].head(20).style.bar(align='zero', color=['#d65f5f', '#5fba7d'])
 ```
 
-We can also select out data by index vaue, and then transpose.
+An alternative but equivalent way of manipulating the data is to select on the basis of index value, and then transpose the dataframe.
+
+```python
+pace.loc[['8','3','11']].T.head()
+```
 
 Data in this wide format, indexed by lapnumber and with columns containing rebased delta times on each lap for each car, can be plotted from directly:
 
@@ -161,7 +168,7 @@ pace = (laptimes_wide - laptimes_wide.loc[rebase])
 ```
 
 ```python
-#merge the pace back in to laptimes, then plot out the elapsed
+#merge the pace back in to laptimes, then plot against the elapsed time
 #We can get the delats by NUMBER and LAP_NUMBER
 pd.melt(pace.reset_index(), id_vars=['NUMBER']).head()
 ```
@@ -252,6 +259,81 @@ inpitlaps.plot.scatter(x='LAP_NUMBER',y='y', ax=ax);
 ```python
 laptimes.groupby('NUMBER')['PIT_TIME_S'].sum()[['8','3','11']]
 ```
+
+## Neutralising Accumulated Pit Times
+
+The gaps in the pit stop neutralised pace charts represent a loss of information.
+
+If we want to concentrate on *pace* rather than on time lost through being spent in the pits, for each car we could provide a naive dummy estimate of the inlap and outlap pace by setting them each to:
+
+`((inlap_time + outlap_time) - pitstop_time) / 2`.
+
+However, we note that we also have access to sector times, so we might be able to make a better estimate based using sector times and a proportionate subtraction of the pit stop time from the inlap and outlap times.
+
+To start working towards this, it might make sense to start pulling out pit data specifically.
+
+```python
+pit_data = laptimes[laptimes['INLAP'] | laptimes['OUTLAP']][:]
+pit_data['LAP_TYPE'] = pit_data['INLAP'].map({True:'INLAP', False:'OUTLAP'})
+pit_data.head()
+```
+
+As a basis for comparison, let's see what the sector times were for the fastest 5 laps of the race:
+
+```python
+pit_sector_cols = ['NUMBER','S1','S2','S3','PIT_TIME_S','LAP_TIME_S', 'LAP_NUMBER']
+
+laptimes.sort_values('LAP_TIME_S').head()[pit_sector_cols]
+```
+
+We can inspect the inlap and outlap sector times for a specific car to get a feel for how they behave:
+
+```python
+pit_sector_cols.append('LAP_TYPE')
+
+pit_data[pit_data['NUMBER'].isin(['8'])][pit_sector_cols].sort_values(['NUMBER','LAP_NUMBER'])
+```
+
+```python
+pit_data[['LAP_TYPE','S1','S2','S3']].melt(id_vars='LAP_TYPE').head()
+```
+
+How does the distribution of times on the inlap compare with the fastest lap sector times?
+
+We might expect at least the third sector time to show an elevated time due to pit loss and perhaps an element of the pit stop time.
+
+```python
+import plotly.express as px
+fig = px.box(pit_data[pit_data['LAP_TYPE']=='INLAP'][['LAP_TYPE','S1','S2','S3']].melt(id_vars='LAP_TYPE'),
+             x="variable", y="value")
+fig.show()
+```
+
+How about the distribution on the outlap? We'd expect at least the first sector to have an elevated first sector time for a several reasons:
+
+- it is likely to include a pit stop time and pit lane exit loss time;
+- it make take time for the tyres to get up to speed.
+
+```python
+fig = px.box(pit_data[pit_data['LAP_TYPE']=='OUTLAP'][['LAP_TYPE','S1','S2','S3']].melt(id_vars='LAP_TYPE'),
+             x="variable", y="value")
+fig.show()
+```
+
+For comparison, what are the sector time distributions for the 50 fastest laps, bearing in mind that the pit event distributions are from all cars and the 50 fastest lap distributions are likely from a more limited range of cars?
+
+```python
+fig = px.box(laptimes.sort_values('LAP_TIME_S').head(50)[['S1','S2','S3']].melt(),
+             x="variable", y="value")
+fig.show()
+```
+
+```python
+#Which cars produced the 50 fastest laps?
+laptimes.sort_values('LAP_TIME_S').head(50)['NUMBER'].unique()
+```
+
+A better comparison would be to have the box plots side by side for inlap, outlap, and flying lap:
 
 ```python
 
