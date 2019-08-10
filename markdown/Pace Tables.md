@@ -238,6 +238,10 @@ leadlaptimes_sum.head()
 
 ### Generating a pit time neutralistion mask
 
+One thing we notice is that the pace table and charts are cluttered by the inlap and outlap times...
+
+It may be better to try to neutralise those (for each car including the rebased car )and deal with a pit analysis more specifically elsewhere, such as by comparing inlaps and outlap times,and perhaps also making comparisons relative to flying lap just before the inlap and just after the outlap.
+
 The *pandas* [`DataFrame.mask()`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.mask.html) method lets us replace values in a dataframe if the corresponding mask element is true.
 
 This means we can find the delta times on each lap and then neutralise the ones that are associated either with the inlap or outlap of the rebase car, or the inlap or outlap of each other car.
@@ -284,7 +288,7 @@ The NA values introduce breaks in the plotted lines:
 masked_pace.T[['8','3','11']].plot();
 ```
 
-Using the accumulated deltas we see the breaks more clearly, altough it should be recalled that these are introduced when *either* the rebased car *or* the reported on car goes through the pits.
+Using the accumulated deltas we see the breaks more clearly, although it should be recalled that these are introduced when *either* the rebased car *or* the reported on car goes through the pits.
 
 ```python
 ax = masked_pace.T[['8','3','11']].cumsum().plot();
