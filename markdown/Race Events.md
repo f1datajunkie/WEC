@@ -190,8 +190,17 @@ laptimes.groupby('LEAD_LAP_NUMBER')['INLAP'].apply(lambda x: x.sum()).plot(kind=
 
 If we have a full lap yellow or safety car, this should be reflected in the top speed recorded for the lap.
 
+Trivially exploring this for an arbitrary car:
+
 ```python
 laptimes[laptimes['NUMBER']=='1'].plot(x='LAP_NUMBER',y='TOP_SPEED');
+```
+
+or as a set of median or Nth quantile speeds:
+
+```python
+ax = laptimes.groupby('LAP_NUMBER')['TOP_SPEED'].quantile(1).plot();
+laptimes.groupby('LAP_NUMBER')['TOP_SPEED'].quantile(.85).plot(ax=ax);
 ```
 
 ## Simple Classifier
