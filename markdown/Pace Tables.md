@@ -200,10 +200,41 @@ fig = px.line(tmp[tmp['NUMBER'].isin(['11','3','8'])],
 fig.show()
 ```
 
-One thing we notice is that the pace table and charts are cluttered by the inlap and outlap times...
+### Plotting Against Lead Lap
 
-It may be better to try to neutralise those (for each car including the rebased car )and deal with a pit analysis more specifically elsewhere, such as by comparing inlaps and outlap times,and perhaps also making comparisons relative to flying lap just before the inlap and just after the outlap.
+One of the difficulties associated with performing analysis against the elapsed race time is the continuous nature of the elapsed time variable.
 
+A more convenient discrete time basis is the lead lap count, rather than the lap number an individual car is on.
+
+Variously, a car may record zero, one or more laptimes for any given lead lap:
+
+- *zero*: for example, when a car is lapped by the leader;
+- *one*: a car is lapping at about the same rate as the leader;
+- *two or more*: a car unlaps itself, for example if the leader has pitted or as part of an unwinding during a safety car period.
+
+For convenience, where a car records more than one laptime for a given lead lap, we might allocate it a lap time according to the last lap it completed on the lead lap and then rebase from that.
+
+Note that this approach may lead to a loss of laptime information which might make a nonsense of certain reports (for example, ones based on total accumulated laptime).
+
+```python
+leadlaptimes_last = laptimes.drop_duplicates(subset=['NUMBER', 'LEAD_LAP_NUMBER'],
+                                        keep='last')
+
+leadlaptimes_last_wide =  leadlaptimes_last.pivot(index='NUMBER',
+                                columns='LEAD_LAP_NUMBER',
+                                values='LAP_TIME_S')
+leadlaptimes_last_wide.head()
+```
+
+Alternatively, where a car records more than one laptime on a given lead lap, we might choose to set the corresponding laptime to the sum of the laptimes recorded on the lead lap. This approach is more likely to be useful if we are running accumulated laptime time calculations becuase there is no loss off laptime information:
+
+```python
+leadlaptimes_sum = laptimes.groupby(['NUMBER','LEAD_LAP_NUMBER'])['LAP_TIME_S'].sum().reset_index().pivot(index='NUMBER',
+                                columns='LEAD_LAP_NUMBER',
+                                values='LAP_TIME_S')
+leadlaptimes_sum.head()
+
+```
 
 ### Generating a pit time neutralistion mask
 
