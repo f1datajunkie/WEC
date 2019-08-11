@@ -492,6 +492,18 @@ laptimes.sort_values('LAP_TIME_S').head(50)['NUMBER'].unique()
 
 A better comparison would be to have the box plots side by side for inlap, outlap, and flying lap:
 
+
+## Sector Pace
+
+As well as making pace judgements around laptimes, we can take a finer grained view and make comparisons around sector times.
+
+
+## Intra-Team Pace Comparisons
+
+One of the comparisons we are likely to want to make is across laptimes and sector times for each of the drivers within the same team.
+
+For a fair comparison, we need to make pace assessments against some sort of "fixed" basis. If we make pace assessments based on laptime deltas for any given lap to the fastest lap time recorded on the associated leadlap, we can make pace just against the best laptime recorded  on each lap. (Alternatively, we could use the ultimate lap for each lead lap, based on the sum of the best sector times recorded on each lead lap.)
+
 ```python
 
 ```
