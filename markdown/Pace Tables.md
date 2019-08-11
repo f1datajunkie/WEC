@@ -388,7 +388,6 @@ pit_data[pit_data['NUMBER'].isin(['8'])][pit_sector_cols].sort_values(['NUMBER',
 from scipy import stats
 import numpy as np
 
-#Need a more aggressive cut-off...
 pit_data.loc[np.abs(stats.zscore(pit_data['S1_S'])) > 3, 'S1_S'] = NaN
 pit_data.loc[np.abs(stats.zscore(pit_data['S2_S'])) > 3, 'S2_S'] = NaN
 pit_data.loc[np.abs(stats.zscore(pit_data['S3_S'])) > 3, 'S3_S'] = NaN
@@ -399,36 +398,90 @@ pit_data.boxplot(column=['S1_S', 'S2_S', 'S2_S']);
 ```
 
 ```python
-pit_data[['LAP_TYPE','S1_S','S2_S','S3_S']].melt(id_vars='LAP_TYPE').head()
+#Need a more aggressive cut-off...
+#Need a more robust way of setting this...
+pit_data.loc[pit_data['S1_S'] > 100, 'S1_S'] = NaN
+pit_data.loc[pit_data['S2_S'] > 100, 'S2_S'] = NaN
+pit_data.loc[pit_data['S3_S'] > 100, 'S3_S'] = NaN
+
+pit_data.boxplot(column=['S1_S', 'S2_S', 'S2_S']);
 ```
 
-How does the distribution of times on the inlap compare with the fastest lap sector times?
+We can also generate interactive *plotly* box plots from long format data.
 
-We might expect at least the third sector time to show an elevated time due to pit loss and perhaps an element of the pit stop time.
+For example, lets get a base line set of flying lap data based on laptimes lass than 200s:
+
+```python
+#Laptimes < 250s
+
+lap_filter = ( (laptimes['LAP_TIME_S']<200) & ~laptimes['PITMASK'])
+
+laps_under200s_lap_sectors = laptimes[lap_filter][['S1_S','S2_S','S3_S']].melt()
+laps_under200s_lap_sectors.head()
+
+```
 
 ```python
 import plotly.express as px
-fig = px.box(pit_data[pit_data['LAP_TYPE']=='INLAP'][['LAP_TYPE','S1_S','S2_S','S3_S']].melt(id_vars='LAP_TYPE'),
-             x="variable", y="value")
+
+fig = px.box(laps_under200s_lap_sectors, x="variable", y="value")
 fig.show()
 ```
+
+How does the distribution of sectos times on the pit related laps compare with the the lap sector times on flying laps?
+
+On an inlap, wwe might expect at least the third sector time to show an elevated time due to pit loss and perhaps an element of the pit stop time.
+
 
 How about the distribution on the outlap? We'd expect at least the first sector to have an elevated first sector time for a several reasons:
 
 - it is likely to include a pit stop time and pit lane exit loss time;
 - it make take time for the tyres to get up to speed.
 
+
+Let's grab the sector times for inlaps and outlaps:
+
 ```python
-fig = px.box(pit_data[pit_data['LAP_TYPE']=='OUTLAP'][['LAP_TYPE','S1_S','S2_S','S3_S']].melt(id_vars='LAP_TYPE'),
-             x="variable", y="value")
-fig.show()
+inlap_sectors = pit_data[pit_data['LAP_TYPE']=='INLAP'][['LAP_TYPE','S1_S','S2_S','S3_S']].melt(id_vars='LAP_TYPE')
+outlap_sectors = pit_data[pit_data['LAP_TYPE']=='OUTLAP'][['LAP_TYPE','S1_S','S2_S','S3_S']].melt(id_vars='LAP_TYPE')
+
+outlap_sectors.head()
 ```
 
-For comparison, what are the sector time distributions for the 50 fastest laps, bearing in mind that the pit event distributions are from all cars and the 50 fastest lap distributions are likely from a more limited range of cars?
+Now we can compare them to the flying laps in a single chart:
 
 ```python
-fig = px.box(laptimes.sort_values('LAP_TIME_S').head(50)[['S1_S','S2_S','S3_S']].melt(),
-             x="variable", y="value")
+import plotly.graph_objects as go
+
+fig = go.Figure()
+
+
+fig.add_trace(go.Box(
+    y = laps_under200s_lap_sectors['value'],
+    x = laps_under200s_lap_sectors['variable'],
+    name = 'Laps under 250s',
+    marker_color='#00851B'
+))
+
+fig.add_trace(go.Box(
+    y = inlap_sectors['value'],
+    x = inlap_sectors['variable'],
+    name = 'Inlap',
+    marker_color='#FF851B'
+))
+
+fig.add_trace(go.Box(
+    y = outlap_sectors['value'],
+    x = outlap_sectors['variable'],
+    name ='Outlap',
+    marker_color = '#FF4136'
+))
+
+
+fig.update_layout(
+    yaxis_title='Sector time',
+    boxmode='group' # group together boxes of the different traces for each value of x
+)
 fig.show()
 ```
 
