@@ -101,7 +101,7 @@ Now let's save the data into the sibling directory `data` as a file with that fi
 ```python
 # The .. path says "use the parent directory
 # So ../data says: use the data directory in the parent directory
-laptimes.to_csv('../data/{}'.format(outfile_name)
+laptimes.to_csv('../data/{}'.format(outfile_name))
 ```
 
 If we have saved the data into a file, we can also load the data back in to a data from the file rather than having to download it again from its online location.
@@ -320,6 +320,10 @@ laptimes[['CROSSING_FINISH_LINE_IN_PIT', 'INLAP', 'OUTLAP', 'CAR_STINT']].head()
 
 #### Driver Stint
 
+Defining a *driver stint* as a stint between pit events for a particular driver, we can generate a *driver stint* number for each driver as a cumulative count of outlap flags associated with the driver.
+
+To provide a unique stint identifier, we can derive another column that identifies the car, driver and driver stint number:
+
 ```python
 #Driver stint - a cumulative count for each driver of their stints
 laptimes['DRIVER_STINT'] = laptimes.groupby('CAR_DRIVER')['OUTLAP'].cumsum().astype(int)
@@ -327,20 +331,37 @@ laptimes['DRIVER_STINT'] = laptimes.groupby('CAR_DRIVER')['OUTLAP'].cumsum().ast
 #Let's also derive another identifier - CAR_DRIVER_STINT
 laptimes['CAR_DRIVER_STINT'] = laptimes['CAR_DRIVER'] + '_' + laptimes['DRIVER_STINT'].astype(str)
 
-laptimes[['CAR_DRIVER', 'CROSSING_FINISH_LINE_IN_PIT', 'INLAP','CAR_STINT', 'DRIVER_STINT', 'CAR_DRIVER_STINT']].tail(20).head(10)
+laptimes[['CAR_DRIVER', 'CROSSING_FINISH_LINE_IN_PIT', 'INLAP',
+          'CAR_STINT', 'DRIVER_STINT', 'CAR_DRIVER_STINT']].tail(20).head(10)
 
 ```
+
+#### Driver Session Stint
+
+Where a driver pits within a driver session, we may want to identify the driver stints within a particular session. This can be calculated as a cumulative sum of outlap flags over driver sessions:
 
 ```python
 #Driver session stint - a count for each driver of their stints within a particular driving session
 laptimes['DRIVER_SESSION_STINT'] = laptimes.groupby(['CAR_DRIVER','DRIVER_SESSION'])['OUTLAP'].cumsum().astype(int)
-laptimes[['CAR_DRIVER', 'CROSSING_FINISH_LINE_IN_PIT', 'INLAP','CAR_STINT', 'DRIVER_STINT', 'CAR_DRIVER_STINT', 'DRIVER_SESSION_STINT']].head()
+
+laptimes[['CAR_DRIVER', 'CROSSING_FINISH_LINE_IN_PIT',
+          'INLAP','CAR_STINT', 'DRIVER_STINT', 'CAR_DRIVER_STINT',
+          'DRIVER_SESSION_STINT']].head()
 
 ```
 
 ## Lap Counts Within Stints
 
-It may be convenient to keep track of lap counts within stints.
+It may be convenient to keep track of lap counts within each of the stint types already identified.
+
+We can do this by running cumulative counts on rows within specified row groupings.
+
+Lap counts we can easily tally include counts of:
+
+- *lap count by car stint*: the number of laps between each pit stop;
+- *lap count by driver*: the nunber of laps driven by each driver;
+- *lap count by driver session*: the number of laps driven within each driver session;
+- *lap count by driver stint*: the number of laps driven by a driver between consecutive pit stops;
 
 ```python
 # lap count by car stint - that is, between each pit stop
@@ -355,14 +376,18 @@ laptimes['LAPS_DRIVER_SESSION'] = laptimes.groupby(['CAR_DRIVER','DRIVER_SESSION
 #lap count by driver stint
 laptimes['LAPS_DRIVER_STINT'] = laptimes.groupby(['CAR_DRIVER','DRIVER_STINT']).cumcount()+1
 
-laptimes[['LAPS_CAR_STINT', 'LAPS_DRIVER', 'LAPS_DRIVER_SESSION', 'LAPS_DRIVER_STINT']].tail()
+laptimes[['LAPS_CAR_STINT', 'LAPS_DRIVER',
+          'LAPS_DRIVER_SESSION', 'LAPS_DRIVER_STINT']].tail()
+
 ```
 
 ## Basic Individual Driver Reports
 
-Using those additional columns, we should be able to start creating reports by driver by facetting on individual drivers.
+Using the stint indentifier and stint lap counts, we should be able to start creating reports by driver by faceting on individual drivers.
 
-(Note: it might be interesting to do some datasette demos with particular facets, which make it easy to select teams, drivers, etc.)
+One way of exploring the data is to use an interactive table widget, such as the `qgrid` widget, that allows us to filter the rows displayed in an interactive table directly from an interactive table UI.
+
+*Note: it might also be interesting to do some datasette demos with particular facets, which make it easy to select teams, drivers, etc.*
 
 ```python
 #!pip3 install qgrid
@@ -374,7 +399,7 @@ qgrid.show_grid(laptimes[['LAP_NUMBER', 'NUMBER', 'CAR_DRIVER',  'INLAP', 'CAR_S
 
 ## Simple Stint Reports
 
-Using the various stint details, we can pull together a simple set of widgets to allow us to explore times by car / driver.
+Using the various stint details, we can pull together interactive dashboard style views that provide a simple set of widgets to allow us to explore times by car / driver.
 
 ```python
 import ipywidgets as widgets
@@ -423,9 +448,15 @@ def laptime_table(car, driver, driversession, driverstint):
                                                          'DRIVER_STINT', 'DRIVER_SESSION_STINT',
                                                          'LAP_NUMBER','LAP_TIME', 'LAP_TIME_S']])
     
-interact(laptime_table, car=cars, driver=drivers, driversession=driversessions, driverstint=driverstints);
+interact(laptime_table,
+         car=cars, driver=drivers,
+         driversession=driversessions, driverstint=driverstints);
 
 ```
+
+We can also plot a simple laptime charts over sets of laptimes, such as the laptimes associated with a particular driver's stint.
+
+*In and of themselves, without comparison to laptimes of other drivers at the same time within a race, these numbers are not necessarily very informative. However, these data manipulations may prove useful building blocks for generating rather more informative reports.*
 
 ```python
 def laptime_chart(car, driver, driversession, driverstint):
@@ -437,9 +468,15 @@ def laptime_chart(car, driver, driversession, driverstint):
     if not tmp_df.empty:
         tmp_df.plot()
         
-interact(laptime_chart, car=cars, driver=drivers, driversession=driversessions, driverstint=driverstints);
+interact(laptime_chart,
+         car=cars, driver=drivers,
+         driversession=driversessions, driverstint=driverstints);
 
 ```
+
+Slightly more useful perhaps, for a particular driver, we can compare the laptime evolution across all their driver sessions.
+
+We can optionally toggle the display of inlaps and outlaps which are likely to have laptimes that differ from flying lap laptimes. 
 
 ```python
 #Also add check boxes to suppress inlap and outlap?
@@ -469,7 +506,9 @@ def laptime_charts(car, driver, driversession, inlap, outlap):
 
 
 
-interact(laptime_charts, car=cars, driver=drivers, driversession=driversessions, inlap=inlaps, outlap=outlaps);
+interact(laptime_charts,
+         car=cars, driver=drivers, driversession=driversessions,
+         inlap=inlaps, outlap=outlaps);
 
 
 ```
