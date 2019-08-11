@@ -490,8 +490,21 @@ fig.show()
 laptimes.sort_values('LAP_TIME_S').head(50)['NUMBER'].unique()
 ```
 
-A better comparison would be to have the box plots side by side for inlap, outlap, and flying lap:
+## Per Cent Based Pace Comparisons
 
+In *Formula One*, the 107% regulation specifies that in the first round of qualifying, cars must qualify with a laptime within 107% of the laptime of the car with the fastest laptime in order to guarantee a race place, although in recent years stewards have not tended to exclude cars on this basis.
+
+Using *per cent* based pace comparisons has several advantages:
+
+- if the race pace changes due to weather conditions, if all drivers are affected equally by changes in race conditions, each getting "X%" slower, for example, the same lap time deltas unde wet and dry conditions would correspond to different relative pace deltas;
+- using *per cent* based comparisons allows us to more fairly compare pace on circuits with different lap times, or more fairly compare pace over different length sectors with different typical sector times on particular circuit.
+
+
+So how might we go about making *per cent* based pace calculations?
+
+```python
+# TO DO
+```
 
 ## Sector Pace
 
