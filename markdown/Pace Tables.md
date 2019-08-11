@@ -96,8 +96,13 @@ We can style the table to show how much time the rebased car made or lost on eac
 
 ```python
 #In a live notebook, this produces a styled bar chart within each cell
-pace.T[['3','11']].head(20).style.bar(align='zero', color=['#d65f5f', '#5fba7d'])
+pace.T[['3','11']].head(10).style.bar(align='zero', color=['#d65f5f', '#5fba7d'])
 ```
+
+Note that we can change the direction of the colourway depending on who the anticipated reader of the chart is. For example, if we take the perspective of someone associated with the rebased car, they may want to know where they gained time (a Good Thing) compared to other cars, in which case we might colour slower (larger, positive delta) laptimes for the other cars as *green* and faster (lower, negative delta) laptimes as *red*.
+
+However, if we want to see where other cars are *gaining* on the rebased car (a Good Thing, perhaps, under this reading) we may want to colour the faster (lower, negative delta) times as *green* and the slower (larger, positive delta) times as *red*.
+
 
 An alternative but equivalent way of manipulating the data is to select on the basis of index value, and then transpose the dataframe.
 
@@ -448,7 +453,7 @@ outlap_sectors = pit_data[pit_data['LAP_TYPE']=='OUTLAP'][['LAP_TYPE','S1_S','S2
 outlap_sectors.head()
 ```
 
-Now we can compare them to the flying laps in a single chart:
+Now we can compare them to the flying laps in a single chart, grouping the box plots according to sector and lap type:
 
 ```python
 import plotly.graph_objects as go
@@ -499,11 +504,29 @@ Using *per cent* based pace comparisons has several advantages:
 - if the race pace changes due to weather conditions, if all drivers are affected equally by changes in race conditions, each getting "X%" slower, for example, the same lap time deltas unde wet and dry conditions would correspond to different relative pace deltas;
 - using *per cent* based comparisons allows us to more fairly compare pace on circuits with different lap times, or more fairly compare pace over different length sectors with different typical sector times on particular circuit.
 
-
+<!-- #region -->
 So how might we go about making *per cent* based pace calculations?
 
+Recall the original calculations:
+
 ```python
-# TO DO
+pace = (laptimes_wide - laptimes_wide.loc[rebase])
+pace.head()
+```
+
+To convert these to percentages, we need to divide through each laptime by the corresponding laptime for the driver against which we are rebasing rather than finding the delta.
+<!-- #endregion -->
+
+```python
+pace_pc = (laptimes_wide / laptimes_wide.loc[rebase])
+pace_pc.head()
+```
+
+Alternatively, we might want to express the time delta as a percentage of the rebased car's laptime, which means that we can more easily colour the table based on whether the sign of the percentage difference corrsponds to a slower (negative) or faster (positive) laptime:
+
+```python
+pace_pcr = pace_pc - 1
+pace_pcr.T[['3','11']].head(10).style.bar(align='zero', color=['#5fba7d', '#d65f5f'])
 ```
 
 ## Sector Pace
