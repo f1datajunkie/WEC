@@ -513,7 +513,11 @@ interact(laptime_charts,
 
 ```
 
-## Simple Model
+## Simple Laptime Evolution Models
+
+Observation of laptime charts might reveal to us trends in laptime evolution that we can recognise by eye, such as periods where the laptime appears consistent or where the laptime appears to drop off at a consistent rate (that is, the laptime increases by the same amount each lap).
+
+If we can spot these trends *by eye*, can we also detect them using statistical analyses, and use numbers to characterise the patterns we see?
 
 An example of creating a simple model using some explicitly pulled out data.
 
@@ -542,19 +546,69 @@ Fitted without explanation... we should only accept models that appear to fit, i
 ```python
 import seaborn as sns
 
-sns.lmplot(x='index', y='LAP_TIME_S', data=sample_laptimes(laptimes,'56_1', 1, 2).reset_index());
+sns.lmplot(x='index', y='LAP_TIME_S',
+           data=sample_laptimes(laptimes,'56_1', 1, 2).reset_index());
 
 ```
 
 We can also increase the order of the fit line (the `ci` parameter toggles the confidence bounds display):
 
 ```python
-sns.lmplot(x='index', y='LAP_TIME_S', data=sample_laptimes(laptimes,'56_1', 1, 2).reset_index(),
+sns.lmplot(x='index', y='LAP_TIME_S',
+           data=sample_laptimes(laptimes,'56_1', 1, 2).reset_index(),
            order = 2, ci=None);
 
 ```
 
+### Piecewise Linear Models
+
+Sometimes we may be able to fit a dataset quite accurately using a simple first order linear model or second order model, but in other cases a more accurate fit may come from combining several first order linear models over different parts of the data, a so-called piecewise linear model.
+
+There are a couple of Python packages out there that provide support for this, including [`DataDog/piecewise`](https://github.com/DataDog/piecewise) and the more acticely maintained [*piecewise_linear_fit_py* (`pwlf`)](https://github.com/cjekel/piecewise_linear_fit_py) [[docs](https://jekel.me/piecewise_linear_fit_py/)].
+
 ```python
+data = sample_laptimes(laptimes,'56_1', 1, 2).reset_index()
+x = data['index'].values
+y = data['LAP_TIME_S'].values
+```
+
+```python
+#!pip3 install --upgrade scipy
+#!pip3 install pwlf
+import pwlf
+import numpy as np
+```
+
+```python
+pwlf_fit = pwlf.PiecewiseLinFit(x, y)
+# fit the data using two line segments
+pwlf_fit_2_segments = pwlf_fit.fit(2)
+```
+
+```python
+import matplotlib.pyplot as plt
+
+# From the docs, generate a prediction
+xHat = np.linspace(min(x), max(x), num=10000)
+yHat = pwlf_fit.predict(xHat)
+
+# Plot the results
+plt.figure()
+plt.plot(x, y, 'o')
+plt.plot(xHat, yHat, '-')
+plt.show()
+```
+
+```python
+pwlf_fit.slopes, pwlf_fit.intercepts, pwlf_fit.fit_breaks
+```
+
+### Obtaining Linear Model Parameters
+
+Being able to plot linear models directly over a dataset is graphically useful, but what if we want ot get hold of the numerical model parameters?
+
+```python
+#!pip3 install --upgrade statsmodels
 #Simple model
 import statsmodels.api as sm
 
