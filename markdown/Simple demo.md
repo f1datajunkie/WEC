@@ -365,6 +365,8 @@ Using those additional columns, we should be able to start creating reports by d
 (Note: it might be interesting to do some datasette demos with particular facets, which make it easy to select teams, drivers, etc.)
 
 ```python
+#!pip3 install qgrid
+#!jupyter nbextension enable --py --sys-prefix qgrid
 import qgrid
 qgrid.show_grid(laptimes[['LAP_NUMBER', 'NUMBER', 'CAR_DRIVER',  'INLAP', 'CAR_STINT', 
                           'CAR_DRIVER_STINT', 'DRIVER_STINT', 'DRIVER_SESSION', 'DRIVER_SESSION_STINT']])
