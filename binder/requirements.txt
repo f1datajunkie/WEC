@@ -2,6 +2,7 @@ jupytext
 
 matplotlib
 numpy
+scipy
 pandas
 
 #plotly is a rich HTML5 charting library
