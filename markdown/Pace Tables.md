@@ -4,8 +4,8 @@ jupyter:
     text_representation:
       extension: .md
       format_name: markdown
-      format_version: '1.1'
-      jupytext_version: 1.2.1
+      format_version: '1.2'
+      jupytext_version: 1.6.0
   kernelspec:
     display_name: Python 3
     language: python
@@ -21,7 +21,7 @@ The race history chart provides a useful way of reviewing the evolution of a rac
 
 ## Pace Tables
 
-*Pace tables* use driver relative rebased laptime deltas to show the pace difference for a named driver relative to other drivers.
+*Pace tables* use driver relative rebased laptime deltas to highlight the pace difference for a named driver relative to other drivers.
 
 Pace may be given as a speed delta (in terms of s / km difference) or as a laptime delta.
 
@@ -315,7 +315,7 @@ inpitlaps.plot.scatter(x='LAP_NUMBER',y='y', ax=ax);
 
 Visual inspection of that charts suggests certain trends... so could we use the corresponding neutralised data points for the basis of linear pace models, perhaps over various sliding windows?
 
-<!-- #region {"hideCode": false, "hidePrompt": false} -->
+<!-- #region hideCode=false hidePrompt=false -->
 Also, what do we need to do to neutralise inlap and outlap times when working with *leadlap* calculations?
 <!-- #endregion -->
 

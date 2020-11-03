@@ -406,6 +406,8 @@ import ipywidgets as widgets
 from ipywidgets import interact
 ```
 
+For example, we can .. TO DO
+
 ```python
 cars = widgets.Dropdown(
     options=laptimes['NUMBER'].unique(), # value='1',
@@ -541,7 +543,9 @@ sample_laptimes(laptimes,'56_1', 1, 2)
 
 ### Some Simple Linear Models
 
-Fitted without explanation... we should only accept models that appear to fit, i.e. that have a low error...
+The `seaborn` statistical charts package can extract and plot models directly from a provided dataset.
+
+For example, the `.lmplot()` ("linear model plot") accepts two data columns from a dataset and then renders the model, along wit an indication of confidence limits.
 
 ```python
 import seaborn as sns
@@ -551,7 +555,7 @@ sns.lmplot(x='index', y='LAP_TIME_S',
 
 ```
 
-We can also increase the order of the fit line (the `ci` parameter toggles the confidence bounds display):
+We can also increase the `order` of the fit line; the `ci` parameter toggles the confidence bounds display:
 
 ```python
 sns.lmplot(x='index', y='LAP_TIME_S',
@@ -560,50 +564,7 @@ sns.lmplot(x='index', y='LAP_TIME_S',
 
 ```
 
-### Piecewise Linear Models
-
-Sometimes we may be able to fit a dataset quite accurately using a simple first order linear model or second order model, but in other cases a more accurate fit may come from combining several first order linear models over different parts of the data, a so-called piecewise linear model.
-
-There are a couple of Python packages out there that provide support for this, including [`DataDog/piecewise`](https://github.com/DataDog/piecewise) and the more acticely maintained [*piecewise_linear_fit_py* (`pwlf`)](https://github.com/cjekel/piecewise_linear_fit_py) [[docs](https://jekel.me/piecewise_linear_fit_py/)].
-
-```python
-data = sample_laptimes(laptimes,'56_1', 1, 2).reset_index()
-x = data['index'].values
-y = data['LAP_TIME_S'].values
-```
-
-```python
-#!pip3 install --upgrade scipy
-#!pip3 install pwlf
-import pwlf
-import numpy as np
-```
-
-```python
-pwlf_fit = pwlf.PiecewiseLinFit(x, y)
-# fit the data using two line segments
-pwlf_fit_2_segments = pwlf_fit.fit(2)
-```
-
-```python
-import matplotlib.pyplot as plt
-
-# From the docs, generate a prediction
-xHat = np.linspace(min(x), max(x), num=10000)
-yHat = pwlf_fit.predict(xHat)
-
-# Plot the results
-plt.figure()
-plt.plot(x, y, 'o')
-plt.plot(xHat, yHat, '-')
-plt.show()
-```
-
-```python
-pwlf_fit.slopes, pwlf_fit.intercepts, pwlf_fit.fit_breaks
-```
-
-### Obtaining Linear Model Parameters
+### Obtaining Simple Linear Model Parameters
 
 Being able to plot linear models directly over a dataset is graphically useful, but what if we want ot get hold of the numerical model parameters?
 
@@ -639,9 +600,58 @@ fig, ax = plt.subplots()
 fig = sm.graphics.plot_fit(model, 0, ax=ax)
 ```
 
-## Simple Position Calculations
+### Piecewise Linear Models
 
-Some simple demonstrations of calculating position data.
+Sometimes we may be able to fit a dataset quite accurately using a simple first order linear model or second order model, but in other cases a more accurate fit may come from combining several first order linear models over different parts of the data, a so-called *piecewise linear model*.
+
+There are a couple of Python packages out there that provide support for this, including [`DataDog/piecewise`](https://github.com/DataDog/piecewise) and the more acticely maintained [*piecewise_linear_fit_py* (`pwlf`)](https://github.com/cjekel/piecewise_linear_fit_py) [[docs](https://jekel.me/piecewise_linear_fit_py/)].
+
+Let's explore the `pwlf` model by pulling out a couple of data columns used in the above charts:
+
+```python
+data = sample_laptimes(laptimes,'56_1', 1, 2).reset_index()
+x = data['index']
+y = data['LAP_TIME_S']
+```
+
+We can create a model using a specified number of linear segments, in this case, 2. Optionally, we could provide an indication of where we want the breaks to fall along the x-axis, although by default the `.fit()` method will try to find the "best fit" break point(s). 
+
+```python
+#!pip3 install --upgrade scipy
+#!pip3 install pwlf
+import pwlf
+import numpy as np
+
+pwlf_fit = pwlf.PiecewiseLinFit(x, y)
+# fit the data using two line segments
+pwlf_fit_2_segments = pwlf_fit.fit(2)
+```
+
+We can view the model by plotting points predicted using the fitted model for given x-values over the range in the original data:
+
+```python
+import matplotlib.pyplot as plt
+
+# From the docs, generate a prediction
+xHat = np.linspace(min(x), max(x), num=10000)
+yHat = pwlf_fit.predict(xHat)
+
+# Plot the results
+plt.figure()
+plt.plot(x, y, 'o')
+plt.plot(xHat, yHat, '-')
+plt.show()
+```
+
+We can also review the model parameters:
+
+```python
+pwlf_fit.slopes, pwlf_fit.intercepts, pwlf_fit.fit_breaks
+```
+
+## Simple Race Position Calculations
+
+Some simple demonstrations of calculating track position data.
 
 Naively, calculate position based on lap number and accumulated time (there may be complications based on whether the lead car records a laptime from pit entry...).
 
@@ -672,7 +682,7 @@ laptimes['LEAD_LAP_NUMBER'] = laptimes['leader'].cumsum()
 laptimes[['LAP_NUMBER','LEAD_LAP_NUMBER']].tail()
 ```
 
-## Simple Position Chart - Top 10 At End
+## Simple Race Position Chart - Top 10 At End
 
 Find last lap number, then get top 10 on that lap.
 

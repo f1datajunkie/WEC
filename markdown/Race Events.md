@@ -1,6 +1,6 @@
 # Race Events
 
-Simple attempts at identifying race related events.
+Simple sketches around identifying race related events.
 
 ```python
 # using notebook rather than inline enables 3D matplotlib plots
