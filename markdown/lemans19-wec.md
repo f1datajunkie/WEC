@@ -1,4 +1,3 @@
-<!-- #region -->
 # Le Mans 24 Hours, WEC, 2019
 
 Recreating charts in Racecar Engineering.
@@ -9,11 +8,12 @@ But how exactly were the data tables and visualisations produced? And can we fin
 
 In this article, we see how modern, code based data analysis techniques based on ideas from the emerging field of "reproducible research", compared to more traditional spreadsheet based approaches, can be used to create perform data analyses with just one or two lines of code.
 
-This article won't teach you how to be professional programmer, but it will hopefully show you how, with a few simpl formulations, you can start to *get stuff done, a line of code at a time*.
+This article won't teach you how to be professional programmer, but it will hopefully show you how, with a few simple formulations, you can start to *get stuff done, a line of code at a time*.
 
+[See also: https://www.racecar-engineering.com/articles/le-mans-24-hours-gte-technical-report/]
 
 *Series: Coding for Racecar Engineers.*
-<!-- #endregion -->
+
 
 ### Coding for Racecar Engineers
 
@@ -200,6 +200,37 @@ laptimes.columns = [c.strip() for c in laptimes.columns]
 laptimes.columns
 ```
 
+## Reviewing the available data
+
+Let's quickly review what is provided by each of the columns:
+
+- `NUMBER`: 
+- `DRIVER_NUMBER`:
+- `LAP_NUMBER`:
+- `LAP_TIME`:
+- `LAP_IMPROVEMENT`:
+- `CROSSING_FINISH_LINE_IN_PIT`:
+- `S1`:
+- `S1_IMPROVEMENT`:
+- `S2`:
+- `S2_IMPROVEMENT`:
+- `S3`:
+- `S3_IMPROVEMENT`:
+- `KPH`:
+- `ELAPSED`:
+- `HOUR`:
+- `S1_LARGE`:
+- `S2_LARGE`:
+- `S3_LARGE`:
+- `TOP_SPEED`:
+- `DRIVER_NAME`:
+- `PIT_TIME`:
+- `CLASS`:
+- `GROUP`:
+- `TEAM`:
+- `MANUFACTURER`:
+
+
 ## Referencing the Data In a Particular Column or Set of Columns
 One of the powerful features of *pandas* is that it lets us refer to one or more columns of values by referencing the corresponding column name.
 
@@ -303,10 +334,6 @@ def show_teams_by_manufacturer(manufacturer):
 We can also create multiple widgets automatically, and make them sensitive to each other. For example, allow the user to select a manufactuter, display the teams associated with that manufacturer in another widget and then display the team members of the selected team:
 
 ```python
-show_teams_by_manufacturer( manufacturers_widget.value)
-```
-
-```python
 from ipywidgets import Dropdown
 
 #Define a dropdown list widget that displays manufacturers
@@ -331,6 +358,10 @@ def show_drivers_by_team(manufacturer, team):
 
 #Alternatively, use the ipywidgets interact function as a function to define the display
 interact(show_drivers_by_team, manufacturer = manufacturers_widget, team = teams_widget );
+```
+
+```python
+show_teams_by_manufacturer( manufacturers_widget.value)
 ```
 
 ## Getting the Data Straight
@@ -399,13 +430,30 @@ laptimes['LEAD_LAP_NUMBER'] = laptimes['leader'].cumsum()
 laptimes.head()
 ```
 
-## Mean laptime over 20 best laps
+## Developing a notation to describe the data
+
+As well as looking at the data, we shall find it convenient to develop some form of mathematical notation to describe the data and the calculations we might perform on it.
+
+For example, let us identify:
+
+- the laptime, $l_{n,i}$, of the $i$th lap completed by each car number, $n$; $i$ ranges from $1$ to the number of laps completed by that car; if car $7$ records a laptime of 199.0s on lap $14$, then $l_{7,14}=199.0$
+- the number of laps completed by the leader, $i_{max}$, is given as $\forall p_{n,i}=1: max(i)$
+- the position, $p_{n,i}$ of car $n$ on car lap $i$; if car 7 is in third position on it's fourth lap, then $p_{7,4}=3$
+- the lead lap number, $L_{n,i}$, on which each car, $n$, completes its $i$th lap; if car 7 completes its 15th lap on lead lap 18, then $L_{7,15}=18$.
+- the position, $P_{n,i}$ of car $n$ on lead lap $i$; if car 7 is in third position on the fifth lead lap, then $P_{7,5}=3$; note that for the leader, $n$, on (lead) lap, $i$, then $p_{n,i}=1$ and $i=L_{n,i}$ 
+- we note that car $m$ can only only have completed at most the same number of laps as the leader on lap $i$, which is to say $L_{m,i}\leq L_{n,i}$ and hence $L_{m,i}\leq i$, for $m \neq n$ and $P_{n,i}=1$
+- for a particular car, $n$, we can specify the rank, $r_{n,i}$, of its $i$th lap. If a car 7 records its third fastest lap on lap $i=12$, then $r_{7,12}=3$
 
 
-```python
-#select out inlaps
-#~laptimes['CROSSING_FINISH_LINE_IN_PIT'].isnull()
-```
+## Mean laptime over 20 best laps, $^{20}\bar{l}_{n}$
+
+One useful metric for comparing cars (and drivers) in an endurance race is to look at averages taken over their best laps. For example, one commonly used value is the mean laptime taken over a car or driver's twenty best laptimes. Potentially abusing the notation, we might write:
+
+$^{20}\bar{l}_{n} = \sum\limits_{r_{n,i}<20} l_{n,i}$
+
+Alternatively, we might consider the equivalent:
+
+$^{20}\bar{l}_{n} = \sum\limits_{i=1}^{i_{max}} [r_{n,i} \leq 20]l_{n,i}$ where $[...]$ is the *Iverson bracket* such that: $[P]={\begin{cases}1&{\text{if }}P{\text{ is true}}\\0&{\text{otherwise}}\end{cases}}$
 
 ```python
 mean_over_20_best_laps = laptimes.groupby('NUMBER')['LAP_TIME_S'] \
@@ -419,15 +467,28 @@ mean_over_20_best_laps = laptimes.groupby('NUMBER')['LAP_TIME_S'] \
 mean_over_20_best_laps.head(10)
 ```
 
+*If in-laps or out-laps are recorded as laptimes quicker than whole-lap lap times, we may want to exclude them. (Similarly, if we are finding metrics over the slowest lap times, we may want to omit in-lap and out-lap times.)*
+
+```python
+#select out inlaps
+#~laptimes['CROSSING_FINISH_LINE_IN_PIT'].isnull()
+```
+
 We can plot static charts directly from a *pandas* dataframe using the `.plot()` method. For example:
 
 ```python
 mean_over_20_best_laps.plot(kind='bar');
 ```
 
+```python
+# TO DO - show how we can imporve that chart, eg size wise, theme (seaborn) etc
+```
+
 However, we can also plot interactive HTML charts using the `plotly` charting package and its helper, the `cufflinks` package, which adds plotly charting support to *pandas* dataframes via the `iplot()` method.
 
 So let's import the `cufflinks` package and enable it for offline use:
+
+*do we still need cufflinks?*
 
 ```python
 #!pip install plotly cufflinks
@@ -450,6 +511,10 @@ mean_over_20_best_laps.iplot( kind='bar',
 ```
 
 ```python
+# can we colour bar by class?
+```
+
+```python
 def fastest20pc(carlaps, pc=0.2):
     ''' Return the mean of the twenty percent fastest laptimes from a pandas Series of laptimes. '''
     
@@ -466,12 +531,16 @@ laptimes.groupby('NUMBER')['LAP_TIME_S'].apply(fastest20pc).to_frame().head()
 laptimes.groupby('NUMBER')['LAP_TIME_S'].min().sort_values().to_frame().head()
 ```
 
-<!-- #region -->
+## Top 5 Finishers
+
+To find the top 5 cars at the end of the race, we first identify the winner as the car in first position on the last lap.
+
+
 ## Rising Average
 
-The *rising average* laptime chart shows how the average (mean) laptime for a car increases for increasing laptime.
+The *rising average* laptime chart shows how the average (mean) laptime for a car increases for increasing ranked laptime.
 
-The chart essentially provides a graphical view over a dataset. To create the chart, we need to get the data into a shape that we can easily visualise.
+The chart essentially provides a graphical view over a complete dataset. To create the chart, we need to get the data into a shape that we can easily visualise.
 
 For a chart that visualises rising mean laptimes versus ranked lap for a particular car, we need to do the following:
 
@@ -480,22 +549,39 @@ for each car:
   sort the laptimes by increasing laptime;
   calculate the rising average: for the Nth ranked laptime for a car, find the mean laptime over the N fastest laps;
 ```
-<!-- #endregion -->
+
+
+
 
 ```python
+# Find the most number of laps completed,  (i.e. latest lead lap number)
 LAST_LAP = laptimes['LAP_NUMBER'].max()
+```
+
+```python
+# Create a list of of required dataframe columns
 cols = ['NUMBER','TEAM', 'DRIVER_NAME', 'CLASS','LAP_NUMBER','ELAPSED']
+
+# Find top 5 vehicles on latest lead lap
 top5 = laptimes[laptimes['LEAD_LAP_NUMBER']==LAST_LAP].sort_values(['LEAD_LAP_NUMBER', 'POS'])[cols].head(5).reset_index(drop=True)
 top5
 ```
+
+We can also add additional arbitrary cars to the list of cars, by car number, in the top five:
 
 ```python
 SELECTED = top5['NUMBER'].to_list() + ['17']
 ```
 
+For each car, we can sort its laptimes in increaasing order (`laptimes.sort_values(['NUMBER','LAP_TIME_S'])`). If we then calculate a "cumulative count" across the laptimes recorded for each car, ordered by laptime, we can effectively rank each car's own laptimes. We record this as the `CAR_LAP_RANK` value:
+
 ```python
 laptimes['CAR_LAP_RANK'] = laptimes.sort_values(['NUMBER','LAP_TIME_S']).groupby('NUMBER').cumcount()
 ```
+
+We can also find the accumulated time for the ordered laptimes recorded by each car as the `CAR_LAP_RANKED_CUMSUM`, So for example, if we find the fastest three laptimes recorded by a particular car, this is equal to the sum of those three laptimes:
+
+$\sum\limits_{X}^{Y} Z$
 
 ```python
 laptimes['CAR_LAP_RANKED_CUMSUM'] = laptimes.sort_values(['NUMBER','LAP_TIME_S']).groupby('NUMBER')['LAP_TIME_S'].cumsum()
@@ -552,6 +638,15 @@ def rising_average_laptime(manufacturer, team):
                                                                  xTitle=xTitle, 
                                                                  yTitle=yTitle);
 
+```
+
+It can often be instructive to construct a chart in this way, by clearly thinking through some baby steps that build up the data items that you want to plot.
+
+There is, however, often a quick way, using some of the tools that are provided as part of the *pandas* package. (Knowledge of the tools available within the package come with time, as does the expert knowledge that allows you to identify when a particular tool is the one that will help solve your current problem.)
+
+```python
+## TO DO - compare the drivers in a team with their rising laptimes;
+# also look at normalising laptimes eg relative to lead lap time
 ```
 
 ### Advanced Technique
