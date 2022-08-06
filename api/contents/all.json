@@ -1,0 +1,97 @@
+{
+  "content": [
+    {
+      "content": null,
+      "created": "2022-08-06T12:04:09.325362Z",
+      "format": null,
+      "last_modified": "2022-08-06T12:03:19.366189Z",
+      "mimetype": null,
+      "name": "streaming-chart-poc.ipynb",
+      "path": "streaming-chart-poc.ipynb",
+      "size": 6444557,
+      "type": "notebook",
+      "writable": true
+    },
+    {
+      "content": null,
+      "created": "2022-08-06T12:04:09.309361Z",
+      "format": null,
+      "last_modified": "2022-08-06T12:03:19.298185Z",
+      "mimetype": null,
+      "name": "Simple demo.ipynb",
+      "path": "Simple demo.ipynb",
+      "size": 182243,
+      "type": "notebook",
+      "writable": true
+    },
+    {
+      "content": null,
+      "created": "2022-08-06T12:04:09.305361Z",
+      "format": null,
+      "last_modified": "2022-08-06T12:03:19.294185Z",
+      "mimetype": null,
+      "name": "Race Events.ipynb",
+      "path": "Race Events.ipynb",
+      "size": 1512577,
+      "type": "notebook",
+      "writable": true
+    },
+    {
+      "content": null,
+      "created": "2022-08-06T12:04:09.285359Z",
+      "format": null,
+      "last_modified": "2022-08-06T12:03:19.258183Z",
+      "mimetype": null,
+      "name": "Fragments.ipynb",
+      "path": "Fragments.ipynb",
+      "size": 1033,
+      "type": "notebook",
+      "writable": true
+    },
+    {
+      "content": null,
+      "created": "2022-08-06T12:04:09.341363Z",
+      "format": null,
+      "last_modified": "2022-08-06T12:03:19.366189Z",
+      "mimetype": "text/markdown",
+      "name": "streaming-chart-poc.md",
+      "path": "streaming-chart-poc.md",
+      "size": 2334,
+      "type": "file",
+      "writable": true
+    },
+    {
+      "content": null,
+      "created": "2022-08-06T12:04:09.289360Z",
+      "format": null,
+      "last_modified": "2022-08-06T12:03:19.282184Z",
+      "mimetype": null,
+      "name": "Pace Tables.ipynb",
+      "path": "Pace Tables.ipynb",
+      "size": 4916582,
+      "type": "notebook",
+      "writable": true
+    },
+    {
+      "content": null,
+      "created": "2022-08-06T12:04:09.313361Z",
+      "format": null,
+      "last_modified": "2022-08-06T12:03:19.326187Z",
+      "mimetype": null,
+      "name": "lemans19-wec.ipynb",
+      "path": "lemans19-wec.ipynb",
+      "size": 4382498,
+      "type": "notebook",
+      "writable": true
+    }
+  ],
+  "created": "2022-08-06T12:04:09.341363Z",
+  "format": "json",
+  "last_modified": "2022-08-06T12:04:09.341363Z",
+  "mimetype": null,
+  "name": "",
+  "path": "",
+  "size": null,
+  "type": "directory",
+  "writable": true
+}
