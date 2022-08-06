@@ -1,6 +1,6 @@
 jupyterlab
 jupyterlite
-xeus-python-kernel
+jupyterlite-xeus-python
 
 pandas
 matplotlib
