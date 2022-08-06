@@ -1,6 +1,4 @@
 jupyterlab
-jupyterlite
-jupyterlite-xeus-python
 
 pandas
 matplotlib

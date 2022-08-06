@@ -1,0 +1,6 @@
+{
+    "XeusPythonEnv": {
+        "packages": ["numpy", "matplotlib","pandas", "seaborn"]
+    }
+}
+

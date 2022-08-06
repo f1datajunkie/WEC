@@ -1,0 +1,2 @@
+jupyterlite
+jupyterlite-xeus-python
