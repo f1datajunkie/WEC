@@ -1,0 +1,8 @@
+jupyterlab
+jupyterlite
+xeus-python-kernel
+
+pandas
+matplotlib
+seaborn
+plotly
