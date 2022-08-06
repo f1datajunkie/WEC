@@ -1,2 +1,5 @@
 jupyterlite
 jupyterlite-xeus-python
+jupyterlab
+plotly
+seaborn
