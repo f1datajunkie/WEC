@@ -1,0 +1,25 @@
+{
+  "content": [
+    {
+      "content": null,
+      "created": "2022-08-06T14:19:38.198128Z",
+      "format": null,
+      "last_modified": "2022-08-06T14:18:45.053789Z",
+      "mimetype": "text/x-python",
+      "name": "utils.py",
+      "path": "wectools/utils.py",
+      "size": 1161,
+      "type": "file",
+      "writable": true
+    }
+  ],
+  "created": "2022-08-06T14:19:38.198128Z",
+  "format": "json",
+  "last_modified": "2022-08-06T14:19:38.198128Z",
+  "mimetype": null,
+  "name": "wectools",
+  "path": "wectools",
+  "size": null,
+  "type": "directory",
+  "writable": true
+}
