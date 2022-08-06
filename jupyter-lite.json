@@ -13,6 +13,13 @@
         "load": "static/remoteEntry.9c99d8253b5fae00e0e3.js",
         "name": "@jupyterlite/xeus-python-kernel",
         "style": "./style"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.66500334d7b36213676e.js",
+        "mimeExtension": "./mimeExtension",
+        "name": "jupyterlab-plotly"
       }
     ],
     "fileTypes": {
